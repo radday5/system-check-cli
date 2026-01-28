@@ -106,6 +106,27 @@ async function runSfcScan() {
     });
 }
 
+async function runTempFileCleanup() {
+    return runTask('Cleaning Temporary Files', async () => {
+        const tempPaths = [os.tmpdir(), 'C:\\Windows\\Temp'];
+        for (const tempPath of tempPaths) {
+            try {
+                await writeLog(`Cleaning folder: ${tempPath}`);
+                const files = await fs.readdir(tempPath);
+                for (const file of files) {
+                    const filePath = path.join(tempPath, file);
+                    await fs.rm(filePath, { recursive: true, force: true }).catch(err => {
+                        writeLog(`Could not delete ${filePath}: ${err.message}`, 'WARN');
+                    });
+                }
+            } catch (err) {
+                await writeLog(`Could not access temp path ${tempPath}: ${err.message}`, 'WARN');
+            }
+        }
+    });
+}
+
+
 async function main() {
     console.log(chalk.bold.cyan('=== Windows System Maintenance Tool (Node.js) ==='));
     await writeLog('Script started.');
@@ -115,6 +136,7 @@ async function main() {
     await runWingetUpdates();
     await runDismCheck();
     await runSfcScan();
+    await runTempFileCleanup();
 
     console.log(chalk.bold.green('\n=== MAINTENANCE COMPLETE ==='));
     console.log(chalk.gray(`Log file created at: ${logFile}`));
