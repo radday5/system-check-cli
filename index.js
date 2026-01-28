@@ -8,6 +8,7 @@ import chalk from 'chalk';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import ora from 'ora';
+import inquirer from 'inquirer';
 
 const argv = yargs(hideBin(process.argv))
   .option('silent', {
@@ -107,11 +108,7 @@ async function runWindowsUpdateCheck() {
 async function runWingetUpdates() {
     return runTask('Updating Winget Software', async () => {
         await runCommand('winget', ['source', 'update']);
-        if (argv.silent) {
-            await runCommand('winget', ['upgrade', '--all', '--accept-package-agreements', '--accept-source-agreements', '--silent', '--disable-interactivity']);
-        } else {
-            console.log(chalk.yellow('\n  Run `winget upgrade` to view packages and `winget upgrade --all` to install all updates.'));
-        }
+        console.log(chalk.yellow('\n  Use `winget upgrade` to view packages and `winget upgrade --all` to install all updates.'));
     });
 }
 
@@ -155,17 +152,50 @@ async function runDiskOptimization() {
 
 
 async function main() {
-    console.log(chalk.bold.cyan('=== Windows System Maintenance Tool (Node.js) ==='));
+    console.log(chalk.bold.cyan('=== Windows System Maintenance Tool (Node.js) ===\n'));
     await writeLog('Script started.');
 
     await checkAdmin();
+
+    const tasks = {
+        winUpdate: { name: 'Check for Windows Updates', task: runWindowsUpdateCheck, checked: true },
+        winget: { name: 'Update Winget Software', task: runWingetUpdates, checked: true },
+        dism: { name: 'Check DISM Health', task: runDismCheck, checked: true },
+        sfc: { name: 'Run System File Checker (SFC)', task: runSfcScan, checked: true },
+        cleanup: { name: 'Clean Temporary Files', task: runTempFileCleanup, checked: true },
+        optimize: { name: 'Optimize System Drive', task: runDiskOptimization, checked: false },
+    };
+
+    let tasksToRun = Object.keys(tasks);
+
+    if (!argv.silent) {
+        const response = await inquirer.prompt([
+            {
+                type: 'checkbox',
+                name: 'selectedTasks',
+                message: 'Please select the maintenance tasks to run:',
+                choices: Object.entries(tasks).map(([key, value]) => ({
+                    name: value.name,
+                    value: key,
+                    checked: value.checked,
+                })),
+            },
+        ]);
+        tasksToRun = response.selectedTasks;
+    }
+
+    if (tasksToRun.length === 0) {
+        console.log(chalk.yellow('No tasks selected. Exiting.'));
+        return;
+    }
     
-    await runWindowsUpdateCheck();
-    await runWingetUpdates();
-    await runDismCheck();
-    await runSfcScan();
-    await runTempFileCleanup();
-    await runDiskOptimization();
+    console.log(''); // Add a newline for spacing
+
+    for (const taskKey of tasksToRun) {
+        if (tasks[taskKey]) {
+            await tasks[taskKey].task();
+        }
+    }
 
     console.log(chalk.bold.green('\n=== MAINTENANCE COMPLETE ==='));
     console.log(chalk.gray(`Log file created at: ${logFile}`));
