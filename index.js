@@ -126,6 +126,12 @@ async function runTempFileCleanup() {
     });
 }
 
+async function runDiskOptimization() {
+    return runTask('Optimizing System Drive (C:)', async () => {
+        await runCommand('powershell.exe', ['-Command', 'Optimize-Volume -DriveLetter C']);
+    });
+}
+
 
 async function main() {
     console.log(chalk.bold.cyan('=== Windows System Maintenance Tool (Node.js) ==='));
@@ -137,6 +143,7 @@ async function main() {
     await runDismCheck();
     await runSfcScan();
     await runTempFileCleanup();
+    await runDiskOptimization();
 
     console.log(chalk.bold.green('\n=== MAINTENANCE COMPLETE ==='));
     console.log(chalk.gray(`Log file created at: ${logFile}`));
