@@ -56,8 +56,12 @@ function runCommand(command, args = []) {
 async function runTask(title, task) {
     const spinner = ora(title).start();
     try {
-        await task();
-        spinner.succeed(chalk.green(spinner.text));
+        const result = await task();
+        if (result && result.message) {
+            spinner.succeed(chalk.green(`${spinner.text} - ${result.message}`));
+        } else {
+            spinner.succeed(chalk.green(spinner.text));
+        }
         return true;
     } catch (error) {
         spinner.fail(chalk.red(spinner.text));
@@ -81,6 +85,23 @@ async function checkAdmin() {
         await writeLog('ERROR: Script not running as Administrator.', 'ERROR');
         process.exit(1);
     }
+}
+
+async function runWindowsUpdateCheck() {
+    return runTask('Checking for Windows Updates', async () => {
+        const psScript = `
+            $updateSession = New-Object -ComObject Microsoft.Update.Session
+            $updateSearcher = $updateSession.CreateUpdateSearcher()
+            $searchResult = $updateSearcher.Search("IsInstalled=0 and Type='Software' and IsHidden=0")
+            if ($searchResult.Updates.Count -gt 0) {
+                Write-Host "Found $($searchResult.Updates.Count) update(s)."
+            } else {
+                Write-Host "No updates found."
+            }
+        `;
+        const { stdout } = await runCommand('powershell.exe', ['-Command', psScript]);
+        return { message: stdout.trim() };
+    });
 }
 
 async function runWingetUpdates() {
@@ -139,6 +160,7 @@ async function main() {
 
     await checkAdmin();
     
+    await runWindowsUpdateCheck();
     await runWingetUpdates();
     await runDismCheck();
     await runSfcScan();
