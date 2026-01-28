@@ -1,15 +1,13 @@
 #!/usr/bin/env node
 
-import { exec, spawn } from 'child_process';
-import { promisify } from 'util';
+import { spawn } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import chalk from 'chalk';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
-
-const execAsync = promisify(exec);
+import ora from 'ora';
 
 const argv = yargs(hideBin(process.argv))
   .option('silent', {
@@ -29,22 +27,23 @@ async function writeLog(message, level = 'INFO') {
 
 function runCommand(command, args = []) {
     return new Promise((resolve, reject) => {
-        console.log(chalk.gray(`> ${command} ${args.join(' ')}`));
         const child = spawn(command, args, { stdio: 'pipe', shell: true });
+        let stdout = '';
+        let stderr = '';
 
         child.stdout.on('data', (data) => {
-            process.stdout.write(chalk.gray(data.toString()));
+            stdout += data.toString();
         });
 
         child.stderr.on('data', (data) => {
-            process.stderr.write(chalk.red(data.toString()));
+            stderr += data.toString();
         });
 
         child.on('close', (code) => {
             if (code === 0) {
-                resolve(code);
+                resolve({ stdout, stderr });
             } else {
-                reject(new Error(`Command failed with exit code ${code}`));
+                reject(new Error(`Command failed with exit code ${code}\n${stderr}`));
             }
         });
 
@@ -54,14 +53,29 @@ function runCommand(command, args = []) {
     });
 }
 
-
-async function checkAdmin() {
+async function runTask(title, task) {
+    const spinner = ora(title).start();
     try {
-        await execAsync('net session');
-        console.log(chalk.green('Running as Administrator: OK'));
-        await writeLog('Running as Administrator: OK');
+        await task();
+        spinner.succeed(chalk.green(spinner.text));
         return true;
     } catch (error) {
+        spinner.fail(chalk.red(spinner.text));
+        console.error(chalk.red('  ' + error.message.replace(/\n/g, '\n  ')));
+        await writeLog(`${title} failed: ${error.message}`, 'ERROR');
+        return false;
+    }
+}
+
+
+async function checkAdmin() {
+    const spinner = ora('Checking for Administrator privileges').start();
+    try {
+        await runCommand('net', ['session']);
+        spinner.succeed(chalk.green('Running as Administrator: OK'));
+        await writeLog('Running as Administrator: OK');
+    } catch (error) {
+        spinner.fail(chalk.red('Administrator privileges check failed.'));
         console.error(chalk.red('ERROR: This script requires Administrator privileges!'));
         console.log(chalk.yellow('Please re-run your terminal (PowerShell, Command Prompt, etc.) as an Administrator.'));
         await writeLog('ERROR: Script not running as Administrator.', 'ERROR');
@@ -70,54 +84,26 @@ async function checkAdmin() {
 }
 
 async function runWingetUpdates() {
-    console.log(chalk.cyan('\n=== STEP 1: Updating Winget Software ==='));
-    await writeLog('Starting Winget software update');
-    try {
-        console.log('Checking for winget...');
-        await execAsync('winget --version');
-        console.log('Updating winget sources...');
+    return runTask('Updating Winget Software', async () => {
         await runCommand('winget', ['source', 'update']);
-        console.log('Checking for available package updates...');
-        
         if (argv.silent) {
-            console.log(chalk.yellow('Installing all available winget packages in silent mode...'));
-            await runCommand('winget', ['upgrade', '--all', '--accept-package-agreements', '--accept-source-agreements', '--silent']);
-            console.log(chalk.green('Winget packages update command executed.'));
+            await runCommand('winget', ['upgrade', '--all', '--accept-package-agreements', '--accept-source-agreements', '--silent', '--disable-interactivity']);
         } else {
-             console.log(chalk.yellow('Use `winget upgrade` to view packages and `winget upgrade --all` to install all updates.'));
+            console.log(chalk.yellow('\n  Run `winget upgrade` to view packages and `winget upgrade --all` to install all updates.'));
         }
-    } catch (error) {
-        console.error(chalk.red('Winget check failed. Please ensure it is installed and in your PATH.'));
-        await writeLog(`Winget error: ${error.message}`, 'ERROR');
-    }
+    });
 }
 
 async function runDismCheck() {
-    console.log(chalk.cyan('\n=== STEP 2: Checking DISM Health ==='));
-    await writeLog('Starting DISM health check');
-    try {
+    return runTask('Checking DISM Health', async () => {
         await runCommand('Dism.exe', ['/Online', '/Cleanup-Image', '/CheckHealth']);
-        console.log(chalk.green('DISM health check completed successfully.'));
-        await writeLog('DISM health check successful');
-    } catch (error) {
-        console.error(chalk.yellow('DISM health check reported issues or failed.'));
-        console.log(chalk.yellow("Consider running 'DISM /Online /Cleanup-Image /ScanHealth' and 'DISM /Online /Cleanup-Image /RestoreHealth'"));
-        await writeLog(`DISM error: ${error.message}`, 'ERROR');
-    }
+    });
 }
 
 async function runSfcScan() {
-    console.log(chalk.cyan('\n=== STEP 3: Running System File Checker ==='));
-    await writeLog('Starting SFC scan');
-    try {
-        console.log(chalk.yellow('Running sfc /scannow... This may take some time.'));
+    return runTask('Running System File Checker (sfc /scannow)', async () => {
         await runCommand('sfc', ['/scannow']);
-        console.log(chalk.green('SFC scan completed successfully.'));
-        await writeLog('SFC scan successful');
-    } catch (error) {
-        console.error(chalk.yellow('SFC scan completed with errors or requires a reboot.'));
-        await writeLog(`SFC scan error: ${error.message}`, 'ERROR');
-    }
+    });
 }
 
 async function main() {
