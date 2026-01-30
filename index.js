@@ -100,8 +100,14 @@ async function runWindowsUpdateCheck() {
                 Write-Host "No updates found."
             }
         `;
-        const { stdout } = await runCommand('powershell.exe', ['-Command', psScript]);
-        return { message: stdout.trim() };
+        const scriptPath = path.join(os.tmpdir(), `ps-script-${Date.now()}.ps1`);
+        await fs.writeFile(scriptPath, psScript);
+        try {
+            const { stdout } = await runCommand('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', scriptPath]);
+            return { message: stdout.trim() };
+        } finally {
+            await fs.unlink(scriptPath).catch(err => writeLog(`Failed to delete temp script: ${err.message}`, 'WARN'));
+        }
     });
 }
 
@@ -120,7 +126,14 @@ async function runDismCheck() {
 
 async function runSfcScan() {
     return runTask('Running System File Checker (sfc /scannow)', async () => {
-        await runCommand('sfc', ['/scannow']);
+        try {
+            await runCommand('sfc', ['/scannow']);
+        } catch (error) {
+            if (error.message.includes('exit code 1')) {
+                throw new Error(`sfc /scannow failed. This may indicate that Windows Resource Protection found integrity violations.\n  Please check the CBS.log for more details: C:\\Windows\\Logs\\CBS\\CBS.log`);
+            }
+            throw error;
+        }
     });
 }
 
