@@ -118,6 +118,18 @@ async function runWingetUpdates() {
     });
 }
 
+async function runChocoUpdates() {
+    return runTask('Updating Chocolatey Software', async () => {
+        try {
+            await runCommand('choco', ['--version']);
+        } catch (error) {
+            throw new Error('Chocolatey is not installed or not in your PATH. Please install Chocolatey to use this feature.');
+        }
+        await runCommand('choco', ['outdated']);
+        console.log(chalk.yellow('\n  Use `choco upgrade all -y` to upgrade all outdated packages.'));
+    });
+}
+
 async function runDismCheck() {
     return runTask('Checking DISM Health', async () => {
         await runCommand('Dism.exe', ['/Online', '/Cleanup-Image', '/CheckHealth']);
@@ -163,6 +175,89 @@ async function runDiskOptimization() {
     });
 }
 
+async function runHardwareCheck() {
+    const spinner = ora('Gathering Hardware & OS Information').start();
+    try {
+        const psScript = `
+            # Get OS Information
+            $os = Get-CimInstance -ClassName Win32_OperatingSystem
+            $osInfo = @{
+                Caption = $os.Caption
+                Version = $os.Version
+                BuildNumber = $os.BuildNumber
+            }
+
+            # Get CPU Information
+            $cpu = Get-CimInstance -ClassName Win32_Processor
+            $cpuInfo = @{
+                Name = $cpu.Name
+                Manufacturer = $cpu.Manufacturer
+                MaxClockSpeed = $cpu.MaxClockSpeed
+                NumberOfCores = $cpu.NumberOfCores
+                NumberOfLogicalProcessors = $cpu.NumberOfLogicalProcessors
+            }
+
+            # Get GPU Information
+            $gpu = Get-CimInstance -ClassName Win32_VideoController | Select-Object -First 1
+            $gpuInfo = @{
+                Name = $gpu.Name
+                AdapterRAM = $gpu.AdapterRAM / 1MB
+            }
+
+            # Get RAM Information
+            $ram = Get-CimInstance -ClassName Win32_ComputerSystem
+            $ramInfo = @{
+                TotalPhysicalMemory = [math]::Round($ram.TotalPhysicalMemory / 1GB)
+            }
+
+            # Get Motherboard Information
+            $mb = Get-CimInstance -ClassName Win32_BaseBoard
+            $mbInfo = @{
+                Manufacturer = $mb.Manufacturer
+                Product = $mb.Product
+            }
+
+            # Combine all info into a single object
+            $systemInfo = @{
+                OS = $osInfo
+                CPU = $cpuInfo
+                GPU = $gpuInfo
+                RAM = $ramInfo
+                Motherboard = $mbInfo
+            }
+
+            # Convert to JSON and write to output
+            $systemInfo | ConvertTo-Json
+        `;
+        const scriptPath = path.join(os.tmpdir(), `hw-info-${Date.now()}.ps1`);
+        await fs.writeFile(scriptPath, psScript);
+        
+        const { stdout } = await runCommand('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', scriptPath]);
+        const systemInfo = JSON.parse(stdout);
+        await fs.unlink(scriptPath).catch(err => writeLog(`Failed to delete temp script: ${err.message}`, 'WARN'));
+
+        let output = chalk.bold.cyan('\n--- System Information ---\n');
+        output += chalk.bold('OS:') + `\n  - ${systemInfo.OS.Caption} (Version: ${systemInfo.OS.Version}, Build: ${systemInfo.OS.BuildNumber})\n`;
+        output += chalk.bold('CPU:') + `\n  - ${systemInfo.CPU.Name}\n    - Cores: ${systemInfo.CPU.NumberOfCores}, Logical Processors: ${systemInfo.CPU.NumberOfLogicalProcessors}\n    - Max Speed: ${systemInfo.CPU.MaxClockSpeed} MHz\n`;
+        if (systemInfo.GPU) {
+            output += chalk.bold('GPU:') + `\n  - ${systemInfo.GPU.Name}\n    - VRAM: ${systemInfo.GPU.AdapterRAM} MB\n`;
+        }
+        output += chalk.bold('RAM:') + `\n  - Total: ${systemInfo.RAM.TotalPhysicalMemory} GB\n`;
+        output += chalk.bold('Motherboard:') + `\n  - ${systemInfo.Motherboard.Manufacturer} ${systemInfo.Motherboard.Product}\n`;
+        output += chalk.bold.cyan('------------------------');
+        
+        spinner.succeed(chalk.green('Gathered Hardware & OS Information'));
+        console.log(output);
+        await writeLog('Gathered Hardware & OS Information', 'INFO');
+        return true;
+    } catch (error) {
+        spinner.fail(chalk.red('Gathering Hardware & OS Information'));
+        console.error(chalk.red('  ' + error.message.replace(/\n/g, '\n  ')));
+        await writeLog(`Hardware & OS Information failed: ${error.message}`, 'ERROR');
+        return false;
+    }
+}
+
 
 async function main() {
     console.log(chalk.bold.cyan('=== Windows System Maintenance Tool (Node.js) ===\n'));
@@ -171,8 +266,10 @@ async function main() {
     await checkAdmin();
 
     const tasks = {
+        hwInfo: { name: 'Gather Hardware & OS Information', task: runHardwareCheck, checked: true },
         winUpdate: { name: 'Check for Windows Updates', task: runWindowsUpdateCheck, checked: true },
         winget: { name: 'Update Winget Software', task: runWingetUpdates, checked: true },
+        choco: { name: 'Update Chocolatey Software', task: runChocoUpdates, checked: true },
         dism: { name: 'Check DISM Health', task: runDismCheck, checked: true },
         sfc: { name: 'Run System File Checker (SFC)', task: runSfcScan, checked: true },
         cleanup: { name: 'Clean Temporary Files', task: runTempFileCleanup, checked: true },
