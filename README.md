@@ -10,9 +10,18 @@ A command-line interface (CLI) tool built with Node.js to perform essential Wind
 -   **System File Checker (SFC)**: Executes `sfc /scannow` to verify and repair protected Windows system files.
 -   **Logging**: All actions and outputs are logged to a temporary file for review.
 
-## 🚀 Installation
+## 🚀 Quick Start (Recommended)
 
-This tool is designed to be run directly via `npx` from its project directory.
+Run it instantly without installing it:
+
+```bash
+# Run with npx (ensure you are using an Administrator terminal)
+npx system-check-cli
+```
+
+## 📦 Local Installation (Development)
+
+If you'd like to clone and run it locally:
 
 1.  **Clone the repository**:
     ```bash
@@ -23,17 +32,12 @@ This tool is designed to be run directly via `npx` from its project directory.
     ```bash
     npm install
     ```
+3.  **Run with npx**:
+    ```bash
+    npx .
+    ```
 
-## 📋 Usage
-
-To run the maintenance tool, navigate to the project directory and execute it using `npx`.
-
-**IMPORTANT**: You must run your terminal (PowerShell, Command Prompt, etc.) **as an Administrator** for the tool to function correctly.
-
-```bash
-# From within the 'system-check-cli' directory
-npx .
-```
+**IMPORTANT**: You must run your terminal (PowerShell, Command Prompt, etc.) **as an Administrator** for the tool to function correctly. This tool is designed **specifically for Windows**.
 
 ### Silent Mode
 

@@ -26,9 +26,9 @@ async function writeLog(message, level = 'INFO') {
     await fs.appendFile(logFile, logEntry);
 }
 
-function runCommand(command, args = []) {
+function runCommand(command, args = [], options = {}) {
     return new Promise((resolve, reject) => {
-        const child = spawn(command, args, { stdio: 'pipe', shell: true });
+        const child = spawn(command, args, { stdio: 'pipe', shell: true, ...options });
         let stdout = '';
         let stderr = '';
 
@@ -49,7 +49,11 @@ function runCommand(command, args = []) {
         });
 
         child.on('error', (err) => {
-            reject(err);
+            if (err.code === 'ETIMEDOUT') {
+                reject(new Error(`Command timed out: ${command} ${args.join(' ')}`));
+            } else {
+                reject(err);
+            }
         });
     });
 }
@@ -113,7 +117,7 @@ async function runWindowsUpdateCheck() {
 
 async function runWingetUpdates() {
     return runTask('Updating Winget Software', async () => {
-        await runCommand('winget', ['source', 'update']);
+        await runCommand('winget', ['source', 'update'], { timeout: 120000 });
         console.log(chalk.yellow('\n  Use `winget upgrade` to view packages and `winget upgrade --all` to install all updates.'));
     });
 }
@@ -260,6 +264,11 @@ async function runHardwareCheck() {
 
 
 async function main() {
+    if (os.platform() !== 'win32') {
+        console.error(chalk.red('ERROR: This tool is designed for Windows system maintenance only.'));
+        process.exit(1);
+    }
+
     console.log(chalk.bold.cyan('=== Windows System Maintenance Tool (Node.js) ===\n'));
     await writeLog('Script started.');
 
