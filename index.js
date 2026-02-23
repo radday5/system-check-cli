@@ -202,11 +202,42 @@ async function runHardwareCheck() {
             }
 
             # Get GPU Information
-            $gpu = Get-CimInstance -ClassName Win32_VideoController | Select-Object -First 1
-            $gpuInfo = @{
-                Name = $gpu.Name
-                AdapterRAM = $gpu.AdapterRAM / 1MB
+            $gpus = Get-CimInstance -ClassName Win32_VideoController
+            $gpuList = @()
+            foreach ($gpu in $gpus) {
+                $vramMB = [int64]($gpu.AdapterRAM / 1MB)
+                
+                # WMI AdapterRAM is often capped at 4GB (4095/4096MB). 
+                # If it's an NVIDIA card, nvidia-smi is much more reliable.
+                if ($gpu.Name -like "*NVIDIA*") {
+                    $nvsmiPaths = @(
+                        "nvidia-smi.exe",
+                        "$env:ProgramFiles\NVIDIA Corporation\NVSMI\nvidia-smi.exe",
+                        "$env:SystemRoot\System32\nvidia-smi.exe"
+                    )
+                    foreach ($path in $nvsmiPaths) {
+                        try {
+                            $nvOutput = & $path --query-gpu=memory.total --format=csv,noheader,nounits 2>$null
+                            if ($LASTEXITCODE -eq 0 -and $nvOutput) {
+                                $memValues = $nvOutput -split "\\r?\\n" | Where-Object { $_ -match "\\d+" } | ForEach-Object { [int64]($_ -replace "[^\\d]","") }
+                                if ($memValues.Count -gt 0) {
+                                    $vramMB = ($memValues | Measure-Object -Maximum).Maximum
+                                    break
+                                }
+                            }
+                        } catch {}
+                    }
+                }
+                
+                $gpuList += @{
+                    Name = $gpu.Name
+                    AdapterRAM = $vramMB
+                }
             }
+
+            # Return the GPU with the most VRAM (likely the dedicated one)
+            $gpuInfo = $gpuList | Sort-Object AdapterRAM -Descending | Select-Object -First 1
+            if ($null -eq $gpuInfo) { $gpuInfo = @{ Name = "Unknown GPU"; AdapterRAM = 0 } }
 
             # Get RAM Information
             $ram = Get-CimInstance -ClassName Win32_ComputerSystem
@@ -244,7 +275,10 @@ async function runHardwareCheck() {
         output += chalk.bold('OS:') + `\n  - ${systemInfo.OS.Caption} (Version: ${systemInfo.OS.Version}, Build: ${systemInfo.OS.BuildNumber})\n`;
         output += chalk.bold('CPU:') + `\n  - ${systemInfo.CPU.Name}\n    - Cores: ${systemInfo.CPU.NumberOfCores}, Logical Processors: ${systemInfo.CPU.NumberOfLogicalProcessors}\n    - Max Speed: ${systemInfo.CPU.MaxClockSpeed} MHz\n`;
         if (systemInfo.GPU) {
-            output += chalk.bold('GPU:') + `\n  - ${systemInfo.GPU.Name}\n    - VRAM: ${systemInfo.GPU.AdapterRAM} MB\n`;
+            const vramFormatted = systemInfo.GPU.AdapterRAM >= 1024 
+                ? `${(systemInfo.GPU.AdapterRAM / 1024).toFixed(1)} GB` 
+                : `${systemInfo.GPU.AdapterRAM} MB`;
+            output += chalk.bold('GPU:') + `\n  - ${systemInfo.GPU.Name}\n    - VRAM: ${vramFormatted}\n`;
         }
         output += chalk.bold('RAM:') + `\n  - Total: ${systemInfo.RAM.TotalPhysicalMemory} GB\n`;
         output += chalk.bold('Motherboard:') + `\n  - ${systemInfo.Motherboard.Manufacturer} ${systemInfo.Motherboard.Product}\n`;
