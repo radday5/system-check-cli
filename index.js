@@ -16,6 +16,12 @@ const argv = yargs(hideBin(process.argv))
     type: 'boolean',
     description: 'Run in non-interactive mode',
   })
+  .option('yes', {
+    alias: 'y',
+    type: 'boolean',
+    description: 'Automatically answer yes to all prompts (Yes to All)',
+    default: false,
+  })
   .argv;
 
 const logFile = path.join(os.tmpdir(), `SystemMaintenance-${new Date().toISOString().replace(/:/g, '-')}.log`);
@@ -23,28 +29,38 @@ const logFile = path.join(os.tmpdir(), `SystemMaintenance-${new Date().toISOStri
 async function writeLog(message, level = 'INFO') {
     const timestamp = new Date().toISOString();
     const logEntry = `${timestamp} [${level}] ${message}${os.EOL}`;
-    await fs.appendFile(logFile, logEntry);
+    try {
+        await fs.appendFile(logFile, logEntry);
+    } catch (err) {
+        // Silently fail logging if file is inaccessible
+    }
 }
 
 function runCommand(command, args = [], options = {}) {
+    const { stream = false, ...spawnOptions } = options;
     return new Promise((resolve, reject) => {
-        const child = spawn(command, args, { stdio: 'pipe', shell: true, ...options });
+        const child = spawn(command, args, { stdio: stream ? 'inherit' : 'pipe', shell: true, ...spawnOptions });
         let stdout = '';
         let stderr = '';
 
-        child.stdout.on('data', (data) => {
-            stdout += data.toString();
-        });
+        if (!stream && child.stdout) {
+            child.stdout.on('data', (data) => {
+                stdout += data.toString();
+            });
+        }
 
-        child.stderr.on('data', (data) => {
-            stderr += data.toString();
-        });
+        if (!stream && child.stderr) {
+            child.stderr.on('data', (data) => {
+                stderr += data.toString();
+            });
+        }
 
         child.on('close', (code) => {
             if (code === 0) {
                 resolve({ stdout, stderr });
             } else {
-                reject(new Error(`Command failed with exit code ${code}\n${stderr}`));
+                const errorMsg = stream ? `Command failed with exit code ${code}` : `Command failed with exit code ${code}\n${stderr}`;
+                reject(new Error(errorMsg));
             }
         });
 
@@ -92,33 +108,109 @@ async function checkAdmin() {
     }
 }
 
-async function runWindowsUpdateCheck() {
-    return runTask('Checking for Windows Updates', async () => {
-        const psScript = `
+async function runWindowsUpdates() {
+    return runTask('Checking & Installing Windows Updates', async () => {
+        const checkScript = `
             $updateSession = New-Object -ComObject Microsoft.Update.Session
             $updateSearcher = $updateSession.CreateUpdateSearcher()
             $searchResult = $updateSearcher.Search("IsInstalled=0 and Type='Software' and IsHidden=0")
             if ($searchResult.Updates.Count -gt 0) {
                 Write-Host "Found $($searchResult.Updates.Count) update(s)."
+                $searchResult.Updates | ForEach-Object { Write-Host " - $($_.Title)" }
             } else {
                 Write-Host "No updates found."
             }
         `;
-        const scriptPath = path.join(os.tmpdir(), `ps-script-${Date.now()}.ps1`);
-        await fs.writeFile(scriptPath, psScript);
+        const scriptPath = path.join(os.tmpdir(), `ps-check-${Date.now()}.ps1`);
+        await fs.writeFile(scriptPath, checkScript);
+        let foundUpdates = false;
         try {
             const { stdout } = await runCommand('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', scriptPath]);
-            return { message: stdout.trim() };
+            console.log(chalk.gray('\n' + stdout.trim()));
+            foundUpdates = stdout.includes('Found');
+            if (!foundUpdates) return { message: 'System is up to date.' };
         } finally {
-            await fs.unlink(scriptPath).catch(err => writeLog(`Failed to delete temp script: ${err.message}`, 'WARN'));
+            await fs.unlink(scriptPath).catch(() => {});
+        }
+
+        if (foundUpdates) {
+            let confirm = argv.yes;
+            if (!confirm && !argv.silent) {
+                const response = await inquirer.prompt([{
+                    type: 'confirm',
+                    name: 'install',
+                    message: 'Do you want to download and install these updates?',
+                    default: true
+                }]);
+                confirm = response.install;
+            }
+
+            if (confirm) {
+                console.log(chalk.yellow('  Downloading and installing updates... (This may take a while)'));
+                const installScript = `
+                    $updateSession = New-Object -ComObject Microsoft.Update.Session
+                    $updateSearcher = $updateSession.CreateUpdateSearcher()
+                    $searchResult = $updateSearcher.Search("IsInstalled=0 and Type='Software' and IsHidden=0")
+                    if ($searchResult.Updates.Count -gt 0) {
+                        $downloader = $updateSession.CreateUpdateDownloader()
+                        $downloader.Updates = $searchResult.Updates
+                        Write-Host "Downloading updates..."
+                        $downloader.Download()
+                        
+                        $installer = $updateSession.CreateUpdateInstaller()
+                        $installer.Updates = $searchResult.Updates
+                        Write-Host "Installing updates..."
+                        $installResult = $installer.Install()
+                        Write-Host "Installation Result Code: $($installResult.ResultCode)"
+                        if ($installResult.RebootRequired) { Write-Host "REBOOT_REQUIRED" }
+                    }
+                `;
+                const iScriptPath = path.join(os.tmpdir(), `ps-install-${Date.now()}.ps1`);
+                await fs.writeFile(iScriptPath, installScript);
+                try {
+                    const { stdout } = await runCommand('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', iScriptPath]);
+                    if (stdout.includes('REBOOT_REQUIRED')) {
+                        console.log(chalk.bold.red('\n  *** REBOOT REQUIRED to complete updates ***'));
+                    }
+                    return { message: 'Installation attempt finished.' };
+                } finally {
+                    await fs.unlink(iScriptPath).catch(() => {});
+                }
+            } else {
+                return { message: 'Updates skipped by user.' };
+            }
         }
     });
 }
 
 async function runWingetUpdates() {
     return runTask('Updating Winget Software', async () => {
-        await runCommand('winget', ['source', 'update'], { timeout: 120000 });
-        console.log(chalk.yellow('\n  Use `winget upgrade` to view packages and `winget upgrade --all` to install all updates.'));
+        await runCommand('winget', ['source', 'update']);
+        
+        const { stdout } = await runCommand('winget', ['upgrade']);
+        if (stdout.includes('No installed package found matching input criteria') || stdout.includes('No available upgrade found')) {
+            return { message: 'All Winget packages are up to date.' };
+        }
+        
+        console.log(chalk.gray('\n' + stdout.trim()));
+
+        let confirm = argv.yes;
+        if (!confirm && !argv.silent) {
+            const response = await inquirer.prompt([{
+                type: 'confirm',
+                name: 'upgrade',
+                message: 'Do you want to upgrade all outdated Winget packages?',
+                default: true
+            }]);
+            confirm = response.upgrade;
+        }
+
+        if (confirm) {
+            console.log(chalk.yellow('  Upgrading all packages...'));
+            await runCommand('winget', ['upgrade', '--all', '--accept-source-agreements', '--accept-package-agreements'], { stream: true });
+            return { message: 'Upgrade complete.' };
+        }
+        return { message: 'Upgrade skipped.' };
     });
 }
 
@@ -127,23 +219,45 @@ async function runChocoUpdates() {
         try {
             await runCommand('choco', ['--version']);
         } catch (error) {
-            throw new Error('Chocolatey is not installed or not in your PATH. Please install Chocolatey to use this feature.');
+            throw new Error('Chocolatey is not installed or not in your PATH.');
         }
-        await runCommand('choco', ['outdated']);
-        console.log(chalk.yellow('\n  Use `choco upgrade all -y` to upgrade all outdated packages.'));
+
+        const { stdout } = await runCommand('choco', ['outdated']);
+        console.log(chalk.gray('\n' + stdout.trim()));
+
+        if (stdout.includes('Chocolatey has determined 0 package(s) are outdated')) {
+            return { message: 'All Chocolatey packages are up to date.' };
+        }
+
+        let confirm = argv.yes;
+        if (!confirm && !argv.silent) {
+            const response = await inquirer.prompt([{
+                type: 'confirm',
+                name: 'upgrade',
+                message: 'Do you want to upgrade all outdated Chocolatey packages?',
+                default: true
+            }]);
+            confirm = response.upgrade;
+        }
+
+        if (confirm) {
+            await runCommand('choco', ['upgrade', 'all', '-y'], { stream: true });
+            return { message: 'Upgrade complete.' };
+        }
+        return { message: 'Upgrade skipped.' };
     });
 }
 
 async function runDismCheck() {
     return runTask('Checking DISM Health', async () => {
-        await runCommand('Dism.exe', ['/Online', '/Cleanup-Image', '/CheckHealth']);
+        await runCommand('Dism.exe', ['/Online', '/Cleanup-Image', '/CheckHealth'], { stream: true });
     });
 }
 
 async function runSfcScan() {
     return runTask('Running System File Checker (sfc /scannow)', async () => {
         try {
-            await runCommand('sfc', ['/scannow']);
+            await runCommand('sfc', ['/scannow'], { stream: true });
         } catch (error) {
             if (error.message.includes('exit code 1')) {
                 throw new Error(`sfc /scannow failed. This may indicate that Windows Resource Protection found integrity violations.\n  Please check the CBS.log for more details: C:\\Windows\\Logs\\CBS\\CBS.log`);
@@ -175,7 +289,13 @@ async function runTempFileCleanup() {
 
 async function runDiskOptimization() {
     return runTask('Optimizing System Drive (C:)', async () => {
-        await runCommand('powershell.exe', ['-Command', 'Optimize-Volume -DriveLetter C']);
+        await runCommand('powershell.exe', ['-Command', 'Optimize-Volume -DriveLetter C'], { stream: true });
+    });
+}
+
+async function runDnsFlush() {
+    return runTask('Flushing DNS Cache', async () => {
+        await runCommand('ipconfig', ['/flushdns'], { stream: true });
     });
 }
 
@@ -310,12 +430,13 @@ async function main() {
 
     const tasks = {
         hwInfo: { name: 'Gather Hardware & OS Information', task: runHardwareCheck, checked: true },
-        winUpdate: { name: 'Check for Windows Updates', task: runWindowsUpdateCheck, checked: true },
+        winUpdate: { name: 'Check & Install Windows Updates', task: runWindowsUpdates, checked: true },
         winget: { name: 'Update Winget Software', task: runWingetUpdates, checked: true },
         choco: { name: 'Update Chocolatey Software', task: runChocoUpdates, checked: true },
         dism: { name: 'Check DISM Health', task: runDismCheck, checked: true },
         sfc: { name: 'Run System File Checker (SFC)', task: runSfcScan, checked: true },
         cleanup: { name: 'Clean Temporary Files', task: runTempFileCleanup, checked: true },
+        dns: { name: 'Flush DNS Cache', task: runDnsFlush, checked: true },
         optimize: { name: 'Optimize System Drive', task: runDiskOptimization, checked: false },
     };
 
