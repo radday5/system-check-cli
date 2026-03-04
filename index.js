@@ -382,13 +382,17 @@ async function runHardwareCheck() {
             }
 
             # Convert to JSON and write to output
-            $systemInfo | ConvertTo-Json
+            $systemInfo | ConvertTo-Json -Depth 5 -Compress
         `;
         const scriptPath = path.join(os.tmpdir(), `hw-info-${Date.now()}.ps1`);
         await fs.writeFile(scriptPath, psScript);
         
         const { stdout } = await runCommand('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', scriptPath]);
-        const systemInfo = JSON.parse(stdout);
+        const jsonMatch = stdout.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+            throw new Error('Failed to extract JSON from PowerShell output.');
+        }
+        const systemInfo = JSON.parse(jsonMatch[0]);
         await fs.unlink(scriptPath).catch(err => writeLog(`Failed to delete temp script: ${err.message}`, 'WARN'));
 
         let output = chalk.bold.cyan('\n--- System Information ---\n');
