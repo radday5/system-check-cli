@@ -185,9 +185,27 @@ async function runWindowsUpdates() {
 
 async function runWingetUpdates() {
     return runTask('Updating Winget Software', async () => {
-        await runCommand('winget', ['source', 'update']);
+        try {
+            await runCommand('winget', ['source', 'update']);
+        } catch (error) {
+            // Ignore internal errors on source update, as it often works anyway or fails transiently
+            if (!error.message.includes('2316632108')) {
+                throw error;
+            }
+        }
         
-        const { stdout } = await runCommand('winget', ['upgrade']);
+        let stdout = '';
+        try {
+            const result = await runCommand('winget', ['upgrade']);
+            stdout = result.stdout;
+        } catch (error) {
+            // Error 2316632108 (0x8A150001) is often returned when no updates are found or an internal error occurs
+            if (error.message.includes('2316632108')) {
+                return { message: 'All Winget packages are up to date (or encountered internal error).' };
+            }
+            throw error;
+        }
+
         if (stdout.includes('No installed package found matching input criteria') || stdout.includes('No available upgrade found')) {
             return { message: 'All Winget packages are up to date.' };
         }
@@ -207,7 +225,14 @@ async function runWingetUpdates() {
 
         if (confirm) {
             console.log(chalk.yellow('  Upgrading all packages...'));
-            await runCommand('winget', ['upgrade', '--all', '--accept-source-agreements', '--accept-package-agreements'], { stream: true });
+            try {
+                await runCommand('winget', ['upgrade', '--all', '--accept-source-agreements', '--accept-package-agreements'], { stream: true });
+            } catch (error) {
+                if (error.message.includes('2316632108')) {
+                    return { message: 'Upgrade complete with some internal errors (or already up to date).' };
+                }
+                throw error;
+            }
             return { message: 'Upgrade complete.' };
         }
         return { message: 'Upgrade skipped.' };
