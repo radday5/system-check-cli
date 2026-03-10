@@ -1,6 +1,6 @@
 {
   "name": "system-check-cli",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A Node.js tool for Windows system maintenance.",
   "main": "index.js",
   "type": "module",

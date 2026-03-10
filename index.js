@@ -24,7 +24,17 @@ const argv = yargs(hideBin(process.argv))
   })
   .argv;
 
-const logFile = path.join(os.tmpdir(), `SystemMaintenance-${new Date().toISOString().replace(/:/g, '-')}.log`);
+const toolTempDir = path.join(os.tmpdir(), 'SystemMaintenance-Scripts');
+const logFile = path.join(toolTempDir, `SystemMaintenance-${new Date().toISOString().replace(/:/g, '-')}.log`);
+
+// Ensure the tool's script directory exists
+async function ensureTempDir() {
+    try {
+        await fs.mkdir(toolTempDir, { recursive: true });
+    } catch (err) {
+        // Ignore errors if directory exists
+    }
+}
 
 async function writeLog(message, level = 'INFO') {
     const timestamp = new Date().toISOString();
@@ -75,19 +85,25 @@ function runCommand(command, args = [], options = {}) {
 }
 
 async function runTask(title, task) {
+    const startTime = Date.now();
     const spinner = ora(title).start();
     try {
         const result = await task();
+        const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+        
         if (result && result.message) {
-            spinner.succeed(chalk.green(`${spinner.text} - ${result.message}`));
+            spinner.succeed(chalk.green(`${spinner.text} - ${result.message} (${duration}s)`));
         } else {
-            spinner.succeed(chalk.green(spinner.text));
+            spinner.succeed(chalk.green(`${spinner.text} (${duration}s)`));
         }
+        
+        await writeLog(`${title} completed in ${duration}s`, 'INFO');
         return true;
     } catch (error) {
         spinner.fail(chalk.red(spinner.text));
         console.error(chalk.red('  ' + error.message.replace(/\n/g, '\n  ')));
-        await writeLog(`${title} failed: ${error.message}`, 'ERROR');
+        const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+        await writeLog(`${title} failed after ${duration}s: ${error.message}`, 'ERROR');
         return false;
     }
 }
@@ -121,7 +137,7 @@ async function runWindowsUpdates() {
                 Write-Host "No updates found."
             }
         `;
-        const scriptPath = path.join(os.tmpdir(), `ps-check-${Date.now()}.ps1`);
+        const scriptPath = path.join(toolTempDir, `ps-check-${Date.now()}.ps1`);
         await fs.writeFile(scriptPath, checkScript);
         let foundUpdates = false;
         try {
@@ -165,7 +181,7 @@ async function runWindowsUpdates() {
                         if ($installResult.RebootRequired) { Write-Host "REBOOT_REQUIRED" }
                     }
                 `;
-                const iScriptPath = path.join(os.tmpdir(), `ps-install-${Date.now()}.ps1`);
+                const iScriptPath = path.join(toolTempDir, `ps-install-${Date.now()}.ps1`);
                 await fs.writeFile(iScriptPath, installScript);
                 try {
                     const { stdout } = await runCommand('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', iScriptPath]);
@@ -299,12 +315,17 @@ async function runTempFileCleanup() {
             try {
                 await writeLog(`Cleaning folder: ${tempPath}`);
                 const files = await fs.readdir(tempPath);
-                for (const file of files) {
+                
+                // Delete files in parallel for better performance
+                await Promise.all(files.map(file => {
                     const filePath = path.join(tempPath, file);
-                    await fs.rm(filePath, { recursive: true, force: true }).catch(err => {
-                        writeLog(`Could not delete ${filePath}: ${err.message}`, 'WARN');
+                    // Skip our own script directory
+                    if (filePath === toolTempDir) return Promise.resolve();
+                    
+                    return fs.rm(filePath, { recursive: true, force: true }).catch(err => {
+                        return writeLog(`Could not delete ${filePath}: ${err.message}`, 'WARN');
                     });
-                }
+                }));
             } catch (err) {
                 await writeLog(`Could not access temp path ${tempPath}: ${err.message}`, 'WARN');
             }
@@ -409,7 +430,7 @@ async function runHardwareCheck() {
             # Convert to JSON and write to output
             $systemInfo | ConvertTo-Json -Depth 5 -Compress
         `;
-        const scriptPath = path.join(os.tmpdir(), `hw-info-${Date.now()}.ps1`);
+        const scriptPath = path.join(toolTempDir, `hw-info-${Date.now()}.ps1`);
         await fs.writeFile(scriptPath, psScript);
         
         const { stdout } = await runCommand('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', scriptPath]);
@@ -447,6 +468,7 @@ async function runHardwareCheck() {
 
 
 async function main() {
+    await ensureTempDir();
     if (os.platform() !== 'win32') {
         console.error(chalk.red('ERROR: This tool is designed for Windows system maintenance only.'));
         process.exit(1);
@@ -494,7 +516,18 @@ async function main() {
     
     console.log(''); // Add a newline for spacing
 
-    for (const taskKey of tasksToRun) {
+    // Separate tasks into parallel and sequential groups
+    const parallelTasks = ['hwInfo', 'cleanup', 'dns'];
+    const tasksToRunParallel = tasksToRun.filter(key => parallelTasks.includes(key));
+    const tasksToRunSequential = tasksToRun.filter(key => !parallelTasks.includes(key));
+
+    // Run low-contention tasks in parallel
+    if (tasksToRunParallel.length > 0) {
+        await Promise.all(tasksToRunParallel.map(taskKey => tasks[taskKey].task()));
+    }
+
+    // Run remaining tasks sequentially
+    for (const taskKey of tasksToRunSequential) {
         if (tasks[taskKey]) {
             await tasks[taskKey].task();
         }
