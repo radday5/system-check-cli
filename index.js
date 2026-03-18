@@ -430,6 +430,13 @@ async function runHardwareCheck() {
                 TotalPhysicalMemory = [math]::Round($ram.TotalPhysicalMemory / 1GB)
             }
 
+            # Get Disk Information (System Drive C:)
+            $disk = Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DeviceID='C:'"
+            $diskInfo = @{
+                Size = [math]::Round($disk.Size / 1GB)
+                FreeSpace = [math]::Round($disk.FreeSpace / 1GB)
+            }
+
             # Get Motherboard Information
             $mb = Get-CimInstance -ClassName Win32_BaseBoard
             $mbInfo = @{
@@ -443,6 +450,7 @@ async function runHardwareCheck() {
                 CPU = $cpuInfo
                 GPU = $gpuInfo
                 RAM = $ramInfo
+                Disk = $diskInfo
                 Motherboard = $mbInfo
             }
 
@@ -467,6 +475,10 @@ async function runHardwareCheck() {
             output += chalk.bold('GPU:') + `\n  - ${systemInfo.GPU.Name}\n    - VRAM: ${vramFormatted}\n`;
         }
         output += chalk.bold('RAM:') + `\n  - Total: ${systemInfo.RAM.TotalPhysicalMemory} GB\n`;
+        if (systemInfo.Disk) {
+            const freePercent = ((systemInfo.Disk.FreeSpace / systemInfo.Disk.Size) * 100).toFixed(1);
+            output += chalk.bold('Disk (C:):') + `\n  - Size: ${systemInfo.Disk.Size} GB\n    - Free: ${systemInfo.Disk.FreeSpace} GB (${freePercent}%)\n`;
+        }
         output += chalk.bold('Motherboard:') + `\n  - ${systemInfo.Motherboard.Manufacturer} ${systemInfo.Motherboard.Product}\n`;
         output += chalk.bold.cyan('------------------------');
         
