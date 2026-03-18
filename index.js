@@ -46,6 +46,21 @@ async function writeLog(message, level = 'INFO') {
     }
 }
 
+/**
+ * Executes a PowerShell script by writing it to a temporary file and running it.
+ * @param {string} script The PowerShell script content.
+ * @returns {Promise<{stdout: string, stderr: string}>}
+ */
+async function runPowerShell(script) {
+    const scriptPath = path.join(toolTempDir, `ps-script-${Date.now()}-${Math.floor(Math.random() * 1000)}.ps1`);
+    await fs.writeFile(scriptPath, script);
+    try {
+        return await runCommand('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', scriptPath]);
+    } finally {
+        await fs.unlink(scriptPath).catch(err => writeLog(`Failed to delete temp script: ${err.message}`, 'DEBUG'));
+    }
+}
+
 function runCommand(command, args = [], options = {}) {
     const { stream = false, ...spawnOptions } = options;
     return new Promise((resolve, reject) => {
@@ -137,16 +152,14 @@ async function runWindowsUpdates() {
                 Write-Host "No updates found."
             }
         `;
-        const scriptPath = path.join(toolTempDir, `ps-check-${Date.now()}.ps1`);
-        await fs.writeFile(scriptPath, checkScript);
         let foundUpdates = false;
         try {
-            const { stdout } = await runCommand('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', scriptPath]);
+            const { stdout } = await runPowerShell(checkScript);
             console.log(chalk.gray('\n' + stdout.trim()));
             foundUpdates = stdout.includes('Found');
             if (!foundUpdates) return { message: 'System is up to date.' };
-        } finally {
-            await fs.unlink(scriptPath).catch(() => {});
+        } catch (error) {
+            throw new Error(`Failed to check for updates: ${error.message}`);
         }
 
         if (foundUpdates) {
@@ -181,16 +194,14 @@ async function runWindowsUpdates() {
                         if ($installResult.RebootRequired) { Write-Host "REBOOT_REQUIRED" }
                     }
                 `;
-                const iScriptPath = path.join(toolTempDir, `ps-install-${Date.now()}.ps1`);
-                await fs.writeFile(iScriptPath, installScript);
                 try {
-                    const { stdout } = await runCommand('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', iScriptPath]);
+                    const { stdout } = await runPowerShell(installScript);
                     if (stdout.includes('REBOOT_REQUIRED')) {
                         console.log(chalk.bold.red('\n  *** REBOOT REQUIRED to complete updates ***'));
                     }
                     return { message: 'Installation attempt finished.' };
-                } finally {
-                    await fs.unlink(iScriptPath).catch(() => {});
+                } catch (error) {
+                    throw new Error(`Failed to install updates: ${error.message}`);
                 }
             } else {
                 return { message: 'Updates skipped by user.' };
@@ -311,28 +322,36 @@ async function runSfcScan() {
 async function runTempFileCleanup() {
     return runTask('Cleaning Temporary Files', async () => {
         const tempPaths = [os.tmpdir(), 'C:\\Windows\\Temp'];
+        let deletedFiles = 0;
+        let skippedFiles = 0;
+
         for (const tempPath of tempPaths) {
             try {
                 await writeLog(`Cleaning folder: ${tempPath}`);
                 const files = await fs.readdir(tempPath);
-                
+
                 // Delete files in parallel for better performance
                 await Promise.all(files.map(file => {
                     const filePath = path.join(tempPath, file);
                     // Skip our own script directory
                     if (filePath === toolTempDir) return Promise.resolve();
-                    
-                    return fs.rm(filePath, { recursive: true, force: true }).catch(err => {
-                        return writeLog(`Could not delete ${filePath}: ${err.message}`, 'WARN');
+
+                    return fs.rm(filePath, { recursive: true, force: true }).then(() => {
+                        deletedFiles++;
+                    }).catch(err => {
+                        skippedFiles++;
+                        // Log busy files at a lower level (DEBUG) to avoid noise
+                        const level = err.code === 'EBUSY' ? 'DEBUG' : 'WARN';
+                        return writeLog(`Could not delete ${filePath}: ${err.message}`, level);
                     });
                 }));
             } catch (err) {
                 await writeLog(`Could not access temp path ${tempPath}: ${err.message}`, 'WARN');
             }
         }
+        return { message: `Deleted ${deletedFiles} files, ${skippedFiles} skipped (likely in use).` };
     });
 }
-
 async function runDiskOptimization() {
     return runTask('Optimizing System Drive (C:)', async () => {
         await runCommand('powershell.exe', ['-Command', 'Optimize-Volume -DriveLetter C'], { stream: true });
@@ -430,16 +449,13 @@ async function runHardwareCheck() {
             # Convert to JSON and write to output
             $systemInfo | ConvertTo-Json -Depth 5 -Compress
         `;
-        const scriptPath = path.join(toolTempDir, `hw-info-${Date.now()}.ps1`);
-        await fs.writeFile(scriptPath, psScript);
         
-        const { stdout } = await runCommand('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', scriptPath]);
+        const { stdout } = await runPowerShell(psScript);
         const jsonMatch = stdout.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
             throw new Error('Failed to extract JSON from PowerShell output.');
         }
         const systemInfo = JSON.parse(jsonMatch[0]);
-        await fs.unlink(scriptPath).catch(err => writeLog(`Failed to delete temp script: ${err.message}`, 'WARN'));
 
         let output = chalk.bold.cyan('\n--- System Information ---\n');
         output += chalk.bold('OS:') + `\n  - ${systemInfo.OS.Caption} (Version: ${systemInfo.OS.Version}, Build: ${systemInfo.OS.BuildNumber})\n`;
