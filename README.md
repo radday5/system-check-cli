@@ -72,6 +72,26 @@ npx system-check-cli -y
 
 ---
 
+## ⏰ Automated Startup (Task Scheduler)
+
+You can set up this tool to run silently in the background every time you log into Windows. This is the recommended way to keep your system updated automatically.
+
+> **Note:** This requires **Administrator privileges** to register the task.
+
+### ➕ Enable Startup
+Run this command to create a scheduled task that executes the tool with `--silent` and `--yes` flags at every logon:
+```bash
+npm run startup:install
+```
+
+### ➖ Disable Startup
+Run this command to remove the scheduled task:
+```bash
+npm run startup:uninstall
+```
+
+---
+
 ## 📋 Requirements
 - **Operating System**: Windows 10 or 11.
 - **Privileges**: **Administrator Rights** (Right-click Terminal -> Run as Administrator).
