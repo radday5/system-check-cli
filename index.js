@@ -253,7 +253,7 @@ async function runWingetUpdates() {
         if (confirm) {
             console.log(chalk.yellow('  Upgrading all packages...'));
             try {
-                await runCommand('winget', ['upgrade', '--all', '--accept-source-agreements', '--accept-package-agreements'], { stream: true });
+                await runCommand('winget', ['upgrade', '--all', '--accept-source-agreements', '--accept-package-agreements']);
             } catch (error) {
                 if (error.message.includes('2316632108')) {
                     return { message: 'Upgrade complete with some internal errors (or already up to date).' };
@@ -293,7 +293,7 @@ async function runChocoUpdates() {
         }
 
         if (confirm) {
-            await runCommand('choco', ['upgrade', 'all', '-y'], { stream: true });
+            await runCommand('choco', ['upgrade', 'all', '-y']);
             return { message: 'Upgrade complete.' };
         }
         return { message: 'Upgrade skipped.' };
@@ -302,14 +302,14 @@ async function runChocoUpdates() {
 
 async function runDismCheck() {
     return runTask('Checking DISM Health', async () => {
-        await runCommand('Dism.exe', ['/Online', '/Cleanup-Image', '/CheckHealth'], { stream: true });
+        await runCommand('Dism.exe', ['/Online', '/Cleanup-Image', '/CheckHealth']);
     });
 }
 
 async function runSfcScan() {
     return runTask('Running System File Checker (sfc /scannow)', async () => {
         try {
-            await runCommand('sfc', ['/scannow'], { stream: true });
+            await runCommand('sfc', ['/scannow']);
         } catch (error) {
             if (error.message.includes('exit code 1')) {
                 throw new Error(`sfc /scannow failed. This may indicate that Windows Resource Protection found integrity violations.\n  Please check the CBS.log for more details: C:\\Windows\\Logs\\CBS\\CBS.log`);
@@ -354,13 +354,13 @@ async function runTempFileCleanup() {
 }
 async function runDiskOptimization() {
     return runTask('Optimizing System Drive (C:)', async () => {
-        await runCommand('powershell.exe', ['-Command', 'Optimize-Volume -DriveLetter C'], { stream: true });
+        await runCommand('powershell.exe', ['-Command', 'Optimize-Volume -DriveLetter C']);
     });
 }
 
 async function runDnsFlush() {
     return runTask('Flushing DNS Cache', async () => {
-        await runCommand('ipconfig', ['/flushdns'], { stream: true });
+        await runCommand('ipconfig', ['/flushdns']);
     });
 }
 
@@ -544,18 +544,8 @@ async function main() {
     
     console.log(''); // Add a newline for spacing
 
-    // Separate tasks into parallel and sequential groups
-    const parallelTasks = ['hwInfo', 'cleanup', 'dns'];
-    const tasksToRunParallel = tasksToRun.filter(key => parallelTasks.includes(key));
-    const tasksToRunSequential = tasksToRun.filter(key => !parallelTasks.includes(key));
-
-    // Run low-contention tasks in parallel
-    if (tasksToRunParallel.length > 0) {
-        await Promise.all(tasksToRunParallel.map(taskKey => tasks[taskKey].task()));
-    }
-
-    // Run remaining tasks sequentially
-    for (const taskKey of tasksToRunSequential) {
+    // Run tasks sequentially to prevent console output overlap
+    for (const taskKey of tasksToRun) {
         if (tasks[taskKey]) {
             await tasks[taskKey].task();
         }

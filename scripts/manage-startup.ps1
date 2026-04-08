@@ -17,8 +17,8 @@ if ($Action -eq "install") {
     # Resolve the absolute path to index.js (assumed to be one level up from this script)
     $scriptPath = Resolve-Path "$PSScriptRoot\..\index.js"
     
-    # Create the action (runs node with the script and silent flags)
-    $actionObj = New-ScheduledTaskAction -Execute $nodePath -Argument "`"$($scriptPath.Path)`" --silent --yes"
+    # Create the action (runs node with the script and silent flags via powershell to hide the window)
+    $actionObj = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-WindowStyle Hidden -Command `"& '$nodePath' '$($scriptPath.Path)' --silent --yes`""
     
     # Trigger on Logon
     $triggerObj = New-ScheduledTaskTrigger -AtLogOn
