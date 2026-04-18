@@ -359,7 +359,7 @@ async function runDiskOptimization() {
         const script = `
             $drives = Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DriveType=3"
             foreach ($drive in $drives) {
-                $letter = $drive.DeviceID.Replace(':', '')
+                $letter = $drive.DeviceID
                 Write-Host "Optimizing Drive $letter..."
                 # defrag /O performs the proper optimization for the media type (Trim for SSD, Defrag for HDD)
                 defrag.exe $letter /O /V
