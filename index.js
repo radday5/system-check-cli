@@ -312,7 +312,8 @@ async function runSfcScan() {
             await runCommand('sfc', ['/scannow']);
         } catch (error) {
             if (error.message.includes('exit code 1')) {
-                throw new Error(`sfc /scannow failed. This may indicate that Windows Resource Protection found integrity violations.\n  Please check the CBS.log for more details: C:\\Windows\\Logs\\CBS\\CBS.log`);
+                const systemRoot = process.env.SystemRoot || 'C:\\Windows';
+                throw new Error(`sfc /scannow failed. This may indicate that Windows Resource Protection found integrity violations.\n  Please check the CBS.log for more details: ${systemRoot}\\Logs\\CBS\\CBS.log`);
             }
             throw error;
         }
@@ -321,7 +322,8 @@ async function runSfcScan() {
 
 async function runTempFileCleanup() {
     return runTask('Cleaning Temporary Files', async () => {
-        const tempPaths = [os.tmpdir(), 'C:\\Windows\\Temp'];
+        const systemRoot = process.env.SystemRoot || 'C:\\Windows';
+        const tempPaths = [os.tmpdir(), path.join(systemRoot, 'Temp')];
         let deletedFiles = 0;
         let skippedFiles = 0;
 
