@@ -353,8 +353,18 @@ async function runTempFileCleanup() {
     });
 }
 async function runDiskOptimization() {
-    return runTask('Optimizing System Drive (C:)', async () => {
-        await runCommand('powershell.exe', ['-Command', 'Optimize-Volume -DriveLetter C']);
+    return runTask('Optimizing All Fixed Drives (Trim/Defrag)', async () => {
+        const script = `
+            $drives = Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DriveType=3"
+            foreach ($drive in $drives) {
+                $letter = $drive.DeviceID.Replace(':', '')
+                Write-Host "Optimizing Drive $letter..."
+                # defrag /O performs the proper optimization for the media type (Trim for SSD, Defrag for HDD)
+                defrag.exe $letter /O /V
+            }
+        `;
+        const { stdout } = await runPowerShell(script);
+        console.log(chalk.gray('\n' + stdout.trim()));
     });
 }
 
@@ -430,11 +440,15 @@ async function runHardwareCheck() {
                 TotalPhysicalMemory = [math]::Round($ram.TotalPhysicalMemory / 1GB)
             }
 
-            # Get Disk Information (System Drive C:)
-            $disk = Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DeviceID='C:'"
-            $diskInfo = @{
-                Size = [math]::Round($disk.Size / 1GB)
-                FreeSpace = [math]::Round($disk.FreeSpace / 1GB)
+            # Get All Fixed Disk Information
+            $disks = Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DriveType=3"
+            $diskList = @()
+            foreach ($disk in $disks) {
+                $diskList += @{
+                    DeviceID = $disk.DeviceID
+                    Size = [math]::Round($disk.Size / 1GB)
+                    FreeSpace = [math]::Round($disk.FreeSpace / 1GB)
+                }
             }
 
             # Get Motherboard Information
@@ -450,7 +464,7 @@ async function runHardwareCheck() {
                 CPU = $cpuInfo
                 GPU = $gpuInfo
                 RAM = $ramInfo
-                Disk = $diskInfo
+                Disks = $diskList
                 Motherboard = $mbInfo
             }
 
@@ -475,9 +489,13 @@ async function runHardwareCheck() {
             output += chalk.bold('GPU:') + `\n  - ${systemInfo.GPU.Name}\n    - VRAM: ${vramFormatted}\n`;
         }
         output += chalk.bold('RAM:') + `\n  - Total: ${systemInfo.RAM.TotalPhysicalMemory} GB\n`;
-        if (systemInfo.Disk) {
-            const freePercent = ((systemInfo.Disk.FreeSpace / systemInfo.Disk.Size) * 100).toFixed(1);
-            output += chalk.bold('Disk (C:):') + `\n  - Size: ${systemInfo.Disk.Size} GB\n    - Free: ${systemInfo.Disk.FreeSpace} GB (${freePercent}%)\n`;
+        
+        if (systemInfo.Disks && systemInfo.Disks.length > 0) {
+            output += chalk.bold('Disks:') + '\n';
+            systemInfo.Disks.forEach(disk => {
+                const freePercent = ((disk.FreeSpace / disk.Size) * 100).toFixed(1);
+                output += `  - Drive ${disk.DeviceID} Size: ${disk.Size} GB, Free: ${disk.FreeSpace} GB (${freePercent}%)\n`;
+            });
         }
         output += chalk.bold('Motherboard:') + `\n  - ${systemInfo.Motherboard.Manufacturer} ${systemInfo.Motherboard.Product}\n`;
         output += chalk.bold.cyan('------------------------');
@@ -516,7 +534,7 @@ async function main() {
         sfc: { name: 'Run System File Checker (SFC)', task: runSfcScan, checked: true },
         cleanup: { name: 'Clean Temporary Files', task: runTempFileCleanup, checked: true },
         dns: { name: 'Flush DNS Cache', task: runDnsFlush, checked: true },
-        optimize: { name: 'Optimize System Drive', task: runDiskOptimization, checked: false },
+        optimize: { name: 'Optimize All Fixed Drives (Trim/Defrag)', task: runDiskOptimization, checked: false },
     };
 
     let tasksToRun = Object.keys(tasks);

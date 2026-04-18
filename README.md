@@ -5,7 +5,7 @@ A powerful, interactive command-line tool built with Node.js to automate essenti
 ## ✨ Features
 
 -   **🛡️ Administrator Check**: Automatically verifies for required elevated privileges.
--   **🖥️ Hardware & OS Info**: Provides a detailed summary of your CPU, GPU (with VRAM), RAM, Motherboard, and Windows version.
+-   **🖥️ Hardware & OS Info**: Provides a detailed summary of your CPU, GPU (with VRAM), RAM, Motherboard, Windows version, and all fixed drives.
 -   **🔄 Windows Updates**: Scans for, lists, and **installs** pending Windows Updates.
 -   **📦 Software Updates**: 
     -   **Winget**: Refreshes sources and upgrades all outdated packages.
@@ -16,7 +16,7 @@ A powerful, interactive command-line tool built with Node.js to automate essenti
 -   **🧹 System Cleanup**:
     -   **Temp Files**: Safely clears Windows and User temporary folders.
     -   **DNS Cache**: Flushes the DNS resolver cache (`ipconfig /flushdns`).
-    -   **Drive Optimization**: Runs `Optimize-Volume` (Trim/Defrag) on the system drive (C:).
+    -   **Drive Optimization**: Runs `defrag /O` (Trim/Defrag) on all fixed logical drives.
 -   **📜 Real-time Logging**: Streams all command output directly to the console and saves a detailed execution log to your `%TEMP%` folder.
 
 ---
@@ -95,7 +95,7 @@ npm run startup:uninstall
 ## 📋 Requirements
 - **Operating System**: Windows 10 or 11.
 - **Privileges**: **Administrator Rights** (Right-click Terminal -> Run as Administrator).
-- **Environment**: Node.js 18.0.0 or higher.
+- **Environment**: Node.js 20.0.0 or higher.
 
 ## 📄 License
 This project is licensed under the ISC License.
