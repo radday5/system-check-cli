@@ -22,6 +22,11 @@ const argv = yargs(hideBin(process.argv))
     description: 'Automatically answer yes to all prompts (Yes to All)',
     default: false,
   })
+  .option('tasks', {
+    alias: 't',
+    type: 'array',
+    description: 'Specify which tasks to run (e.g., -t network dns)',
+  })
   .argv;
 
 const toolTempDir = path.join(os.tmpdir(), 'SystemMaintenance-Scripts');
@@ -376,6 +381,99 @@ async function runDnsFlush() {
     });
 }
 
+async function runNetworkRepair() {
+    return runTask('Repairing Network Stack & Adapters', async () => {
+        console.log(chalk.yellow('  Resetting Winsock and IP stack...'));
+        try {
+            await runCommand('netsh', ['winsock', 'reset']);
+            await runCommand('netsh', ['int', 'ip', 'reset']);
+            await runCommand('netsh', ['int', 'ipv6', 'reset']);
+        } catch (error) {
+            await writeLog(`Network stack reset had some issues: ${error.message}`, 'DEBUG');
+        }
+
+        console.log(chalk.yellow('  Flushing DNS and renewing IP...'));
+        try {
+            await runCommand('ipconfig', ['/flushdns']);
+            await runCommand('ipconfig', ['/release']);
+            await runCommand('ipconfig', ['/renew']);
+        } catch (error) {
+            await writeLog(`IP renewal had some issues: ${error.message}`, 'DEBUG');
+        }
+
+        // Specific fix for Intel I225-V and other Intel adapters known for instability
+        const intelFixScript = `
+            $adapters = Get-NetAdapter -Physical | Where-Object { $_.InterfaceDescription -like "*Intel*" }
+            $classGuid = "{4d36e972-e325-11ce-bfc1-08002be10318}"
+            $regPath = "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Class\\$classGuid"
+            $applied = $false
+
+            foreach ($adapter in $adapters) {
+                Get-ChildItem $regPath -ErrorAction SilentlyContinue | ForEach-Object {
+                    $path = $_.Name.Replace("HKEY_LOCAL_MACHINE", "HKLM:")
+                    $driverDesc = Get-ItemProperty -Path $path -Name "DriverDesc" -ErrorAction SilentlyContinue
+                    if ($driverDesc -and $driverDesc.DriverDesc -eq $adapter.InterfaceDescription) {
+                        Write-Host "  Found stability settings for: $($adapter.InterfaceDescription)"
+                        # Disable Energy Efficient Ethernet (EEE)
+                        if (Get-ItemProperty -Path $path -Name "*EEE" -ErrorAction SilentlyContinue) {
+                            Set-ItemProperty -Path $path -Name "*EEE" -Value "0"
+                            Write-Host "    - Disabled Energy Efficient Ethernet (*EEE)"
+                            $applied = $true
+                        }
+                        # Disable Ultra Low Power Mode (ULP)
+                        if (Get-ItemProperty -Path $path -Name "ULPMode" -ErrorAction SilentlyContinue) {
+                            Set-ItemProperty -Path $path -Name "ULPMode" -Value "0"
+                            Write-Host "    - Disabled Ultra Low Power Mode (ULPMode)"
+                            $applied = $true
+                        }
+                    }
+                }
+            }
+            if ($applied) { Write-Host "STABILITY_FIX_APPLIED" }
+        `;
+
+        try {
+            const { stdout } = await runPowerShell(intelFixScript);
+            if (stdout.includes('STABILITY_FIX_APPLIED')) {
+                console.log(chalk.green('  Applied Intel adapter stability fixes (EEE/ULP disabled).'));
+                console.log(chalk.gray(stdout.trim()));
+            }
+        } catch (error) {
+            await writeLog(`Intel stability fix failed: ${error.message}`, 'DEBUG');
+        }
+
+        let confirmRestart = argv.yes;
+        if (!confirmRestart && !argv.silent) {
+            const response = await inquirer.prompt([{
+                type: 'confirm',
+                name: 'restart',
+                message: 'Do you want to restart all physical network adapters? (This will briefly drop your connection)',
+                default: false
+            }]);
+            confirmRestart = response.restart;
+        }
+
+        if (confirmRestart) {
+            console.log(chalk.yellow('  Restarting physical adapters...'));
+            const restartScript = `
+                $adapters = Get-NetAdapter -Physical
+                foreach ($adapter in $adapters) {
+                    Write-Host "Restarting $($adapter.Name)..."
+                    Restart-NetAdapter -Name $adapter.Name -Confirm:$false
+                }
+            `;
+            try {
+                await runPowerShell(restartScript);
+            } catch (error) {
+                throw new Error(`Failed to restart adapters: ${error.message}`);
+            }
+            return { message: 'Network stack reset, stability fixes applied, and adapters restarted.' };
+        }
+
+        return { message: 'Network stack reset and stability fixes applied.' };
+    });
+}
+
 async function runHardwareCheck() {
     const spinner = ora('Gathering Hardware & OS Information').start();
     try {
@@ -536,12 +634,15 @@ async function main() {
         sfc: { name: 'Run System File Checker (SFC)', task: runSfcScan, checked: true },
         cleanup: { name: 'Clean Temporary Files', task: runTempFileCleanup, checked: true },
         dns: { name: 'Flush DNS Cache', task: runDnsFlush, checked: true },
+        network: { name: 'Repair Network Stack & Reset Adapters', task: runNetworkRepair, checked: true },
         optimize: { name: 'Optimize All Fixed Drives (Trim/Defrag)', task: runDiskOptimization, checked: false },
     };
 
     let tasksToRun = Object.keys(tasks);
 
-    if (!argv.silent) {
+    if (argv.tasks && argv.tasks.length > 0) {
+        tasksToRun = argv.tasks.filter(t => tasks[t]);
+    } else if (!argv.silent) {
         const response = await inquirer.prompt([
             {
                 type: 'checkbox',
