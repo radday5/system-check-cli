@@ -1,9 +1,10 @@
-# Windows System Maintenance CLI (Node.js)
+# Winslopr (Windows Slop Remover)
 
-A powerful, interactive command-line tool built with Node.js to automate essential Windows system maintenance, software updates, and health checks.
+A powerful, interactive command-line tool built with Node.js to automate the removal of "Windows Slop" (bloatware, AI features, telemetry), perform system maintenance, and keep your software updated.
 
 ## ✨ Features
 
+-   **🧹 Slop Removal**: Disables AI features like **Copilot** and **Recall**, removes Bing search from Start, and limits telemetry.
 -   **🛡️ Administrator Check**: Automatically verifies for required elevated privileges.
 -   **🖥️ Hardware & OS Info**: Provides a detailed summary of your CPU, GPU (with VRAM), RAM, Motherboard, Windows version, and all fixed drives.
 -   **🔄 Windows Updates**: Scans for, lists, and **installs** pending Windows Updates.
@@ -14,9 +15,10 @@ A powerful, interactive command-line tool built with Node.js to automate essenti
     -   **DISM**: Repairs the Windows Component Store health.
     -   **SFC**: Runs System File Checker (`sfc /scannow`) to repair corrupted system files.
 -   **🧹 System Cleanup**:
-    -   **Temp Files**: Safely clears Windows and User temporary folders.
+    -   **Temp Files**: Safely clears Windows and User temporary folders (skipping sensitive app folders).
     -   **DNS Cache**: Flushes the DNS resolver cache (`ipconfig /flushdns`).
     -   **Drive Optimization**: Runs `defrag /O` (Trim/Defrag) on all fixed logical drives.
+-   **🌐 Network Repair**: Resets Winsock/IP stack and applies stability fixes for common 2.5GbE adapters (Intel/Realtek).
 -   **📜 Real-time Logging**: Streams all command output directly to the console and saves a detailed execution log to your `%TEMP%` folder.
 
 ---
@@ -27,14 +29,14 @@ A powerful, interactive command-line tool built with Node.js to automate essenti
 The easiest way to run the tool is via `npx`. **Make sure to open your terminal (PowerShell or CMD) as an Administrator.**
 
 ```bash
-npx system-check-cli
+npx winslopr
 ```
 
 ### 🛠️ Local Installation (Development)
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/radday5/system-check-cli.git
-   cd system-check-cli
+   git clone https://github.com/builtbybel/Winslopr.git
+   cd Winslopr
    ```
 2. **Install dependencies**:
    ```bash
@@ -58,28 +60,22 @@ You can customize how the tool runs using flags:
 
 ### 💡 Pro Examples:
 
-**1. Fully Automated (The "Maintenance Mode"):**
-Run all default tasks and install every update without any clicking or typing:
+**1. Fully Automated (The "Slop-Free" Mode):**
+Run all default tasks and apply every fix without any clicking or typing:
 ```bash
-npx system-check-cli -s -y
-```
-
-**2. Interactive with Auto-Install:**
-Choose which categories to run, but if you choose "Updates", don't ask for permission to install them:
-```bash
-npx system-check-cli -y
+npx winslopr -s -y
 ```
 
 ---
 
 ## ⏰ Automated Startup (Task Scheduler)
 
-You can set up this tool to run silently in the background every time you log into Windows. This is the recommended way to keep your system updated automatically.
+You can set up Winslopr to run silently in the background every time you log into Windows.
 
-> **Note:** This requires **Administrator privileges** to register the task.
+> **Note:** This requires **Administrator privileges**.
 
 ### ➕ Enable Startup
-Run this command to create a scheduled task that executes the tool with `--silent` and `--yes` flags at every logon:
+Run this command to create a scheduled task:
 ```bash
 npm run startup:install
 ```
@@ -94,7 +90,7 @@ npm run startup:uninstall
 
 ## 📋 Requirements
 - **Operating System**: Windows 10 or 11.
-- **Privileges**: **Administrator Rights** (Right-click Terminal -> Run as Administrator).
+- **Privileges**: **Administrator Rights**.
 - **Environment**: Node.js 20.0.0 or higher.
 
 ## 📄 License

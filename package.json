@@ -1,12 +1,11 @@
 {
-  "name": "system-check-cli",
-  "version": "1.3.0",
-  "description": "A Node.js tool for Windows system maintenance.",
+  "name": "winslopr",
+  "version": "26.05.05",
+  "description": "A Node.js tool for removing Windows slop and system maintenance.",
   "main": "index.js",
   "type": "module",
   "bin": {
-    "system-check": "./index.js",
-    "system-check-cli": "./index.js"
+    "winslopr": "./index.js"
   },
   "files": [
     "index.js",

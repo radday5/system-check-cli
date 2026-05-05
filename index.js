@@ -332,6 +332,9 @@ async function runTempFileCleanup() {
         let deletedFiles = 0;
         let skippedFiles = 0;
 
+        // Folders to skip (often causing crashes if touched while apps are running)
+        const skipFolders = ['SystemMaintenance-Scripts', 'EasyAntiCheat', 'Ubisoft', 'TheDivision2', 'D3DSCache', 'ShaderCache'];
+
         for (const tempPath of tempPaths) {
             try {
                 await writeLog(`Cleaning folder: ${tempPath}`);
@@ -340,8 +343,12 @@ async function runTempFileCleanup() {
                 // Delete files in parallel for better performance
                 await Promise.all(files.map(file => {
                     const filePath = path.join(tempPath, file);
-                    // Skip our own script directory
-                    if (filePath === toolTempDir) return Promise.resolve();
+                    
+                    // Skip sensitive folders
+                    if (skipFolders.some(skip => file.includes(skip))) {
+                        skippedFiles++;
+                        return Promise.resolve();
+                    }
 
                     return fs.rm(filePath, { recursive: true, force: true }).then(() => {
                         deletedFiles++;
@@ -356,7 +363,7 @@ async function runTempFileCleanup() {
                 await writeLog(`Could not access temp path ${tempPath}: ${err.message}`, 'WARN');
             }
         }
-        return { message: `Deleted ${deletedFiles} files, ${skippedFiles} skipped (likely in use).` };
+        return { message: `Deleted ${deletedFiles} files, ${skippedFiles} skipped (in use or sensitive).` };
     });
 }
 async function runDiskOptimization() {
@@ -389,7 +396,11 @@ async function runNetworkRepair() {
             await runCommand('netsh', ['int', 'ip', 'reset']);
             await runCommand('netsh', ['int', 'ipv6', 'reset']);
         } catch (error) {
-            await writeLog(`Network stack reset had some issues: ${error.message}`, 'DEBUG');
+            const msg = error.message.includes('Access is denied') 
+                ? 'Network stack reset partially failed (Access denied on some keys). This is common and usually requires a reboot.' 
+                : error.message;
+            await writeLog(`Network stack reset issues: ${msg}`, 'DEBUG');
+            console.log(chalk.gray(`  Note: ${msg}`));
         }
 
         console.log(chalk.yellow('  Flushing DNS and renewing IP...'));
@@ -401,56 +412,85 @@ async function runNetworkRepair() {
             await writeLog(`IP renewal had some issues: ${error.message}`, 'DEBUG');
         }
 
-        // Specific fix for Intel I225-V and other Intel adapters known for instability
-        const intelFixScript = `
-            $adapters = Get-NetAdapter -Physical | Where-Object { $_.InterfaceDescription -like "*Intel*" }
+        // Stability fixes for Intel I225-V, Realtek 2.5GbE and other adapters known for link drops
+        const stabilityFixScript = `
             $classGuid = "{4d36e972-e325-11ce-bfc1-08002be10318}"
             $regPath = "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Class\\$classGuid"
-            $applied = $false
+            $appliedCount = 0
 
-            foreach ($adapter in $adapters) {
+            # Properties to disable for stability (EEE, ULP, Power Saving, Offloading issues)
+            $propsToDisable = @(
+                "*EEE", "AdvancedEEE", "EEEMaxSupportSpeed", 
+                "ULPMode", "PowerSavingMode", "PowerDownPll",
+                "WaitAutoNegComplete", "*LsoV2IPv4", "*LsoV2IPv6", "*FlowControl"
+            )
+
+            # Properties to set to specific values (e.g., Flow Control, Interrupt Moderation)
+            $propsToSet = @{
+                "ITR" = "64"               # Set Interrupt Moderation to 'Low'
+                "*InterruptModeration" = "1" # Ensure Interrupt Moderation is Enabled
+            }
+
+            $physicalAdapters = Get-NetAdapter -Physical
+            foreach ($adapter in $physicalAdapters) {
                 Get-ChildItem $regPath -ErrorAction SilentlyContinue | ForEach-Object {
                     $path = $_.Name.Replace("HKEY_LOCAL_MACHINE", "HKLM:")
                     $driverDesc = Get-ItemProperty -Path $path -Name "DriverDesc" -ErrorAction SilentlyContinue
                     if ($driverDesc -and $driverDesc.DriverDesc -eq $adapter.InterfaceDescription) {
-                        Write-Host "  Found stability settings for: $($adapter.InterfaceDescription)"
-                        # Disable Energy Efficient Ethernet (EEE)
-                        if (Get-ItemProperty -Path $path -Name "*EEE" -ErrorAction SilentlyContinue) {
-                            Set-ItemProperty -Path $path -Name "*EEE" -Value "0"
-                            Write-Host "    - Disabled Energy Efficient Ethernet (*EEE)"
-                            $applied = $true
+                        Write-Host "  Checking: $($adapter.InterfaceDescription)"
+                        $adapterApplied = $false
+
+                        foreach ($prop in $propsToDisable) {
+                            if (Get-ItemProperty -Path $path -Name $prop -ErrorAction SilentlyContinue) {
+                                Set-ItemProperty -Path $path -Name $prop -Value "0"
+                                Write-Host "    - Disabled $prop"
+                                $adapterApplied = $true
+                            }
                         }
-                        # Disable Ultra Low Power Mode (ULP)
-                        if (Get-ItemProperty -Path $path -Name "ULPMode" -ErrorAction SilentlyContinue) {
-                            Set-ItemProperty -Path $path -Name "ULPMode" -Value "0"
-                            Write-Host "    - Disabled Ultra Low Power Mode (ULPMode)"
-                            $applied = $true
+
+                        foreach ($prop in $propsToSet.Keys) {
+                            if (Get-ItemProperty -Path $path -Name $prop -ErrorAction SilentlyContinue) {
+                                Set-ItemProperty -Path $path -Name $prop -Value $propsToSet[$prop]
+                                Write-Host "    - Configured $prop"
+                                $adapterApplied = $true
+                            }
                         }
+                        
+                        if ($adapterApplied) { $appliedCount++ }
                     }
                 }
             }
-            if ($applied) { Write-Host "STABILITY_FIX_APPLIED" }
+            if ($appliedCount -gt 0) { Write-Host "STABILITY_FIX_APPLIED" }
         `;
 
+        let fixApplied = false;
         try {
-            const { stdout } = await runPowerShell(intelFixScript);
+            const { stdout } = await runPowerShell(stabilityFixScript);
             if (stdout.includes('STABILITY_FIX_APPLIED')) {
-                console.log(chalk.green('  Applied Intel adapter stability fixes (EEE/ULP disabled).'));
+                fixApplied = true;
+                console.log(chalk.green('  Applied network adapter stability fixes (EEE/ULP disabled, ITR optimized).'));
                 console.log(chalk.gray(stdout.trim()));
+                await writeLog('Applied network adapter stability fixes.', 'INFO');
             }
         } catch (error) {
-            await writeLog(`Intel stability fix failed: ${error.message}`, 'DEBUG');
+            await writeLog(`Stability fix failed: ${error.message}`, 'DEBUG');
         }
 
-        let confirmRestart = argv.yes;
-        if (!confirmRestart && !argv.silent) {
+        // Only suggest/perform restart if fixes were applied or if running manually
+        let confirmRestart = false;
+        if (argv.yes && !argv.silent) {
+            confirmRestart = true;
+        } else if (!argv.silent) {
             const response = await inquirer.prompt([{
                 type: 'confirm',
                 name: 'restart',
-                message: 'Do you want to restart all physical network adapters? (This will briefly drop your connection)',
-                default: false
+                message: 'Do you want to restart all physical network adapters to apply changes? (Briefly drops connection)',
+                default: fixApplied // Default to true if we actually changed something
             }]);
             confirmRestart = response.restart;
+        } else if (argv.yes && argv.silent && fixApplied) {
+            // In fully automated mode, only restart if we actually applied a fix
+            confirmRestart = true;
         }
 
         if (confirmRestart) {
@@ -458,19 +498,44 @@ async function runNetworkRepair() {
             const restartScript = `
                 $adapters = Get-NetAdapter -Physical
                 foreach ($adapter in $adapters) {
-                    Write-Host "Restarting $($adapter.Name)..."
+                    Write-Host "    Restarting $($adapter.Name)..."
                     Restart-NetAdapter -Name $adapter.Name -Confirm:$false
                 }
             `;
             try {
                 await runPowerShell(restartScript);
+                await writeLog('Restarted all physical network adapters.', 'INFO');
             } catch (error) {
                 throw new Error(`Failed to restart adapters: ${error.message}`);
             }
             return { message: 'Network stack reset, stability fixes applied, and adapters restarted.' };
         }
 
-        return { message: 'Network stack reset and stability fixes applied.' };
+        return { message: 'Network stack reset and stability fixes applied (Restart may be required for full effect).' };
+    });
+}
+
+async function runSlopRemoval() {
+    return runTask('Removing Windows Slop (AI, Telemetry, Bing)', async () => {
+        const script = `
+            $registryPaths = @(
+                @{ Path = "HKCU:\\Software\\Policies\\Microsoft\\Windows\\WindowsCopilot"; Name = "TurnOffWindowsCopilot"; Value = 1; Type = "DWord" },
+                @{ Path = "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsCopilot"; Name = "TurnOffWindowsCopilot"; Value = 1; Type = "DWord" },
+                @{ Path = "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows AI"; Name = "DisableAIDataAnalysis"; Value = 1; Type = "DWord" },
+                @{ Path = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Search"; Name = "BingSearchEnabled"; Value = 0; Type = "DWord" },
+                @{ Path = "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection"; Name = "AllowTelemetry"; Value = 0; Type = "DWord" }
+            )
+
+            foreach ($reg in $registryPaths) {
+                if (-not (Test-Path $reg.Path)) {
+                    New-Item -Path $reg.Path -Force | Out-Null
+                }
+                Set-ItemProperty -Path $reg.Path -Name $reg.Name -Value $reg.Value -Type $reg.Type -Force
+                Write-Host "  Set $($reg.Name) to $($reg.Value) in $($reg.Path)"
+            }
+        `;
+        await runPowerShell(script);
+        return { message: 'AI features disabled and telemetry limited.' };
     });
 }
 
@@ -620,12 +685,13 @@ async function main() {
         process.exit(1);
     }
 
-    console.log(chalk.bold.cyan('=== Windows System Maintenance Tool (Node.js) ===\n'));
-    await writeLog('Script started.');
+    console.log(chalk.bold.cyan('=== Winslopr: Windows Slop Remover & Maintenance Tool ===\n'));
+    await writeLog('Winslopr started.');
 
     await checkAdmin();
 
     const tasks = {
+        slop: { name: 'Remove Windows Slop (AI, Telemetry, Bing)', task: runSlopRemoval, checked: true },
         hwInfo: { name: 'Gather Hardware & OS Information', task: runHardwareCheck, checked: true },
         winUpdate: { name: 'Check & Install Windows Updates', task: runWindowsUpdates, checked: true },
         winget: { name: 'Update Winget Software', task: runWingetUpdates, checked: true },

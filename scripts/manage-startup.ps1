@@ -5,7 +5,7 @@ param (
     [string]$Action
 )
 
-$TaskName = "SystemCheckMaintenance"
+$TaskName = "WinsloprMaintenance"
 
 if ($Action -eq "install") {
     $nodePath = (Get-Command node -ErrorAction SilentlyContinue).Source
