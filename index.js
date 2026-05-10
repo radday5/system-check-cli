@@ -420,7 +420,7 @@ async function runNetworkRepair() {
 
             # Properties to disable for stability (EEE, ULP, Power Saving, Offloading issues)
             $propsToDisable = @(
-                "*EEE", "AdvancedEEE", "EEEMaxSupportSpeed", 
+                "*EEE", "AdvancedEEE", "EEEMaxSupportSpeed", "EnableGreenEthernet",
                 "ULPMode", "PowerSavingMode", "PowerDownPll",
                 "WaitAutoNegComplete", "*LsoV2IPv4", "*LsoV2IPv6", "*FlowControl"
             )
