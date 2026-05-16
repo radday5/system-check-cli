@@ -16,6 +16,8 @@ A powerful, interactive command-line tool built with Node.js to automate the rem
     -   **SFC**: Runs System File Checker (`sfc /scannow`) to repair corrupted system files.
 -   **🧹 System Cleanup**:
     -   **Temp Files**: Safely clears Windows and User temporary folders (skipping sensitive app folders).
+    -   **Recycle Bin**: Empties the Recycle Bin for all users.
+    -   **Disk Cleanup**: Runs Windows Disk Cleanup (`cleanmgr.exe`) in background.
     -   **DNS Cache**: Flushes the DNS resolver cache (`ipconfig /flushdns`).
     -   **Drive Optimization**: Runs `defrag /O` (Trim/Defrag) on all fixed logical drives.
 -   **🌐 Network Repair**: Resets Winsock/IP stack and applies stability fixes for common 2.5GbE adapters (Intel/Realtek).
@@ -57,6 +59,8 @@ You can customize how the tool runs using flags:
 | :--- | :--- | :--- |
 | `--yes` | `-y` | **"Yes to All" mode.** Automatically accepts all update/install prompts. |
 | `--silent` | `-s` | **Non-interactive mode.** Skips the initial task selection menu and runs default tasks. |
+| `--info` | `-i` | **System Info mode.** Displays hardware and OS information and then exits. |
+| `--tasks` | `-t` | **Specific tasks.** Run only selected tasks (e.g., `-t dns slop`). |
 
 ### 💡 Pro Examples:
 
