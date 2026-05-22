@@ -52,15 +52,26 @@ export async function runHardwareCheck() {
                     }
                 }
                 
+                $driverDate = "Unknown"
+                if ($gpu.DriverDate) {
+                    try {
+                        $driverDate = $gpu.DriverDate.ToString("yyyy-MM-dd")
+                    } catch {
+                        $driverDate = $gpu.DriverDate.ToString()
+                    }
+                }
+
                 $gpuList += @{
                     Name = $gpu.Name
                     AdapterRAM = $vramMB
+                    DriverVersion = $gpu.DriverVersion
+                    DriverDate = $driverDate
                 }
             }
 
             # Return the GPU with the most VRAM (likely the dedicated one)
             $gpuInfo = $gpuList | Sort-Object AdapterRAM -Descending | Select-Object -First 1
-            if ($null -eq $gpuInfo) { $gpuInfo = @{ Name = "Unknown GPU"; AdapterRAM = 0 } }
+            if ($null -eq $gpuInfo) { $gpuInfo = @{ Name = "Unknown GPU"; AdapterRAM = 0; DriverVersion = "Unknown"; DriverDate = "Unknown" } }
 
             # Get RAM Information
             $ram = Get-CimInstance -ClassName Win32_ComputerSystem
@@ -114,7 +125,7 @@ export async function runHardwareCheck() {
             const vramFormatted = systemInfo.GPU.AdapterRAM >= 1024 
                 ? `${(systemInfo.GPU.AdapterRAM / 1024).toFixed(1)} GB` 
                 : `${systemInfo.GPU.AdapterRAM} MB`;
-            output += chalk.bold('GPU:') + `\n  - ${systemInfo.GPU.Name}\n    - VRAM: ${vramFormatted}\n`;
+            output += chalk.bold('GPU:') + `\n  - ${systemInfo.GPU.Name}\n    - VRAM: ${vramFormatted}\n    - Driver: ${systemInfo.GPU.DriverVersion} (${systemInfo.GPU.DriverDate})\n`;
         }
         output += chalk.bold('RAM:') + `\n  - Total: ${systemInfo.RAM.TotalPhysicalMemory} GB\n`;
         

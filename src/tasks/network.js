@@ -50,7 +50,8 @@ export async function runNetworkRepair(argv) {
                 Get-ChildItem $regPath -ErrorAction SilentlyContinue | ForEach-Object {
                     $path = $_.Name.Replace("HKEY_LOCAL_MACHINE", "HKLM:")
                     $driverDesc = Get-ItemProperty -Path $path -Name "DriverDesc" -ErrorAction SilentlyContinue
-                    if ($driverDesc -and $driverDesc.DriverDesc -eq $adapter.InterfaceDescription) {
+                    $netCfgId = Get-ItemProperty -Path $path -Name "NetCfgInstanceId" -ErrorAction SilentlyContinue
+                    if ($driverDesc -and ($driverDesc.DriverDesc -eq $adapter.InterfaceDescription -or $adapter.DeviceID -eq $netCfgId.NetCfgInstanceId)) {
                         Write-Host "  Checking: $($adapter.InterfaceDescription)"
                         $adapterApplied = $false
 

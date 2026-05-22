@@ -29,9 +29,11 @@ import {
     runTempFileCleanup, 
     runDnsFlush, 
     runRecycleBinCleanup, 
-    runDiskCleanup 
+    runDiskCleanup,
+    runWindowsUpdateCacheCleanup
 } from './src/tasks/cleanup.js';
 import { runNetworkRepair } from './src/tasks/network.js';
+import { runCuttingEdgeEnhancements } from './src/tasks/cuttingEdge.js';
 
 const argv = yargs(hideBin(process.argv))
   .option('silent', {
@@ -84,7 +86,9 @@ async function main() {
         sfc: { name: 'Run System File Checker (SFC)', task: () => runSfcScan(), checked: true },
         cleanup: { name: 'Clean Temporary Files', task: () => runTempFileCleanup(), checked: true },
         recyclebin: { name: 'Empty Recycle Bin', task: () => runRecycleBinCleanup(), checked: true },
+        cuttingEdge: { name: 'Cutting-Edge Windows 11 Enhancements (HAGS, Sudo, Xbox Mode)', task: () => runCuttingEdgeEnhancements(argv), checked: true },
         diskcleanup: { name: 'Run Windows Disk Cleanup (Cleanmgr)', task: () => runDiskCleanup(), checked: false },
+        wucleanup: { name: 'Clean Windows Update Download Cache', task: () => runWindowsUpdateCacheCleanup(), checked: true },
         dns: { name: 'Flush DNS Cache', task: () => runDnsFlush(), checked: true },
         network: { name: 'Repair Network Stack & Reset Adapters', task: () => runNetworkRepair(argv), checked: true },
         optimize: { name: 'Optimize All Fixed Drives (Trim/Defrag)', task: () => runDiskOptimization(), checked: false },

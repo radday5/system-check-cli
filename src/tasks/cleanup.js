@@ -68,3 +68,34 @@ export async function runDiskCleanup() {
         return { message: 'Disk Cleanup started/finished.' };
     });
 }
+
+export async function runWindowsUpdateCacheCleanup() {
+    return runTask('Cleaning Windows Update Download Cache', async () => {
+        const script = `
+            Write-Host "  Stopping Windows Update service..."
+            Stop-Service -Name wuauserv -Force -ErrorAction SilentlyContinue
+            
+            $wuCachePath = "$env:SystemRoot\\SoftwareDistribution\\Download"
+            if (Test-Path $wuCachePath) {
+                Write-Host "  Purging files in $wuCachePath..."
+                Remove-Item -Path "$wuCachePath\\*" -Recurse -Force -ErrorAction SilentlyContinue
+                $remainingCount = (Get-ChildItem -Path $wuCachePath).Count
+                if ($remainingCount -eq 0) {
+                    Write-Host "SUCCESS_CLEANED"
+                }
+            } else {
+                Write-Host "SUCCESS_NOT_FOUND"
+            }
+
+            Write-Host "  Restarting Windows Update service..."
+            Start-Service -Name wuauserv -ErrorAction SilentlyContinue
+        `;
+        const { stdout } = await runPowerShell(script);
+        if (stdout.includes('SUCCESS_CLEANED') || stdout.includes('SUCCESS_NOT_FOUND')) {
+            return { message: 'Windows Update download cache successfully purged.' };
+        } else {
+            return { message: 'Cache purge attempted. Some files may still be in use by the system.' };
+        }
+    });
+}
+

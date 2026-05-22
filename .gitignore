@@ -3,3 +3,7 @@ node_modules/
 
 # Ignore log files
 *.log
+
+# Ignore antigravitycli metadata
+.antigravitycli/
+
