@@ -4,6 +4,7 @@ A powerful, interactive command-line tool built with Node.js to automate the rem
 
 ## ✨ Features
 
+-   **⚡ Smart-Throttling (Startup Optimization)**: Automatically limits heavy or disruptive tasks (like SFC scans, DISM health checks, full disk defrags, system/package updates, and network adapter resets) to run only at sensible intervals (e.g. 7 or 14 days) during silent startup runs, ensuring your computer boots in **under 5 seconds** instead of hogging resources for 30+ minutes on every login.
 -   **🧹 Slop Removal**: Disables AI features like **Copilot** and **Recall**, removes Bing search from Start, and limits telemetry.
 -   **🛡️ Administrator Check**: Automatically verifies for required elevated privileges.
 -   **🖥️ Hardware & OS Info**: Provides a detailed summary of your CPU, GPU (with VRAM), RAM, Motherboard, Windows version, and all fixed drives.
@@ -58,9 +59,33 @@ You can customize how the tool runs using flags:
 | Flag | Alias | Description |
 | :--- | :--- | :--- |
 | `--yes` | `-y` | **"Yes to All" mode.** Automatically accepts all update/install prompts. |
-| `--silent` | `-s` | **Non-interactive mode.** Skips the initial task selection menu and runs default tasks. |
+| `--silent` | `-s` | **Non-interactive mode.** Skips the initial task selection menu, runs default checked tasks, and automatically applies **Smart-Throttling**. |
+| `--force` | `-f` | **Force mode.** Bypasses the Smart-Throttle intervals in silent mode and forces all selected tasks to run. |
+| `--no-throttle` | | **Disable throttling.** Disables the last-run check entirely for the session. |
 | `--info` | `-i` | **System Info mode.** Displays hardware and OS information and then exits. |
 | `--tasks` | `-t` | **Specific tasks.** Run only selected tasks (e.g., `-t dns slop`). |
+
+### ⚡ Smart-Throttle Intervals
+
+When running in non-interactive/silent mode (such as at Windows Startup), Winslopr uses a persistent state file (`%LOCALAPPDATA%\winslopr-state.json`) to track when tasks last completed successfully. It skips heavy or disruptive tasks if they ran recently:
+
+| Task Key | Task Name | Runs At Most Once Every |
+| :--- | :--- | :--- |
+| `slop` | Remove Windows Slop | *Every run* (Instant) |
+| `hwInfo` | Gather Hardware & OS Information | *Every run* (Instant) |
+| `dns` | Flush DNS Cache | *Every run* (Instant) |
+| `cleanup` | Clean Temporary Files | 1 day |
+| `recyclebin` | Empty Recycle Bin | 1 day |
+| `winget` | Update Winget Software | 3 days |
+| `choco` | Update Chocolatey Software | 3 days |
+| `cuttingEdge` | Windows 11 Enhancements | 3 days |
+| `winUpdate` | Check & Install Windows Updates | 7 days |
+| `network` | Repair Network Stack & Reset Adapters | 7 days (prevents daily network drops) |
+| `dism` | Check DISM Health | 14 days |
+| `sfc` | Run System File Checker (SFC) | 14 days (prevents daily 15-minute scans) |
+| `diskcleanup` | Run Windows Disk Cleanup | 14 days |
+| `wucleanup` | Clean Windows Update Cache | 14 days |
+| `optimize` | Optimize All Fixed Drives (Trim/Defrag) | 14 days |
 
 ### 💡 Pro Examples:
 

@@ -10,7 +10,9 @@ import {
     ensureTempDir, 
     writeLog, 
     checkAdmin, 
-    logFile 
+    logFile,
+    loadState,
+    saveState
 } from './src/utils/helpers.js';
 
 import { runSlopRemoval } from './src/tasks/slop.js';
@@ -57,6 +59,17 @@ const argv = yargs(hideBin(process.argv))
     type: 'boolean',
     description: 'Show system information and exit',
   })
+  .option('force', {
+    alias: 'f',
+    type: 'boolean',
+    description: 'Force running all tasks, bypassing the last run throttle in silent mode',
+    default: false,
+  })
+  .option('no-throttle', {
+    type: 'boolean',
+    description: 'Disable the last run throttle checks entirely',
+    default: false,
+  })
   .argv;
 
 async function main() {
@@ -94,7 +107,7 @@ async function main() {
         optimize: { name: 'Optimize All Fixed Drives (Trim/Defrag)', task: () => runDiskOptimization(), checked: false },
     };
 
-    let tasksToRun = Object.keys(tasks);
+    let tasksToRun = Object.keys(tasks).filter(key => tasks[key].checked);
 
     if (argv.tasks && argv.tasks.length > 0) {
         tasksToRun = argv.tasks.filter(t => tasks[t]);
@@ -121,10 +134,49 @@ async function main() {
     
     console.log(''); // Add a newline for spacing
 
+    const state = await loadState();
+    const now = Date.now();
+    const msInDay = 24 * 60 * 60 * 1000;
+    const throttleIntervals = {
+        slop: 0,
+        hwInfo: 0,
+        dns: 0,
+        cleanup: 1 * msInDay,
+        recyclebin: 1 * msInDay,
+        cuttingEdge: 3 * msInDay,
+        winget: 3 * msInDay,
+        choco: 3 * msInDay,
+        winUpdate: 7 * msInDay,
+        network: 7 * msInDay,
+        dism: 14 * msInDay,
+        sfc: 14 * msInDay,
+        diskcleanup: 14 * msInDay,
+        wucleanup: 14 * msInDay,
+        optimize: 14 * msInDay,
+    };
+
+    const isThrottledSession = argv.silent && !argv.force && !argv['no-throttle'] && !argv.noThrottle;
+
     // Run tasks sequentially to prevent console output overlap
     for (const taskKey of tasksToRun) {
-        if (tasks[taskKey]) {
-            await tasks[taskKey].task();
+        if (!tasks[taskKey]) continue;
+
+        const interval = throttleIntervals[taskKey] || 0;
+        const lastRun = state[taskKey] ? new Date(state[taskKey]).getTime() : 0;
+
+        if (isThrottledSession && interval > 0 && lastRun > 0 && (now - lastRun < interval)) {
+            const lastRunStr = new Date(lastRun).toLocaleString();
+            const daysLeft = ((interval - (now - lastRun)) / msInDay).toFixed(1);
+            console.log(chalk.yellow(`[SKIPPED] ${tasks[taskKey].name} - Recently run on ${lastRunStr} (Next run in ${daysLeft} days)`));
+            await writeLog(`Task [${taskKey}] skipped due to throttle. Last run: ${lastRunStr}`);
+            continue;
+        }
+
+        const success = await tasks[taskKey].task();
+
+        if (success !== false) {
+            state[taskKey] = new Date().toISOString();
+            await saveState(state);
         }
     }
 

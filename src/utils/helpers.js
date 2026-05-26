@@ -7,6 +7,24 @@ import ora from 'ora';
 
 export const toolTempDir = path.join(os.tmpdir(), 'SystemMaintenance-Scripts');
 export const logFile = path.join(toolTempDir, `SystemMaintenance-${new Date().toISOString().replace(/:/g, '-')}.log`);
+export const stateFile = path.join(process.env.LOCALAPPDATA || os.homedir(), 'winslopr-state.json');
+
+export async function loadState() {
+    try {
+        const data = await fs.readFile(stateFile, 'utf8');
+        return JSON.parse(data);
+    } catch (err) {
+        return {};
+    }
+}
+
+export async function saveState(state) {
+    try {
+        await fs.writeFile(stateFile, JSON.stringify(state, null, 2), 'utf8');
+    } catch (err) {
+        await writeLog(`Failed to save state: ${err.message}`, 'WARN');
+    }
+}
 
 export async function ensureTempDir() {
     try {
