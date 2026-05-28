@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- SEO Meta Tags -->
+  <title>Winslopr | Automated Windows Slop Remover & System Optimizer</title>
+  <meta name="description" content="Winslopr is a powerful, interactive command-line tool built to remove Windows slop (bloatware, AI Recall, Copilot, telemetry), optimize startup boot speed under 5s, and run regular system upgrades.">
+  <meta name="keywords" content="winslopr, windows bloatware remover, remove copilot, windows telemetry blocker, windos recall disable, cleanup temp files, winget update cli, system-check-cli">
+  <meta name="author" content="builtbybel">
+  
+  <!-- OpenGraph Card (Social Media SEO) -->
+  <meta property="og:title" content="Winslopr - Windows Slop Remover">
+  <meta property="og:description" content="Clean your system, boost startup boot time under 5 seconds, disable tracking and bloatware, and auto-upgrade programs with a single command.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://raw.githubusercontent.com/builtbybel/Winslopr/main/assets/showcase.png">
+  
+  <!-- Favicon / Styling Resources -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧹</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <header class="navbar" id="site-header">
+    <div class="nav-container">
+      <a href="#" class="brand-logo" id="nav-brand-logo">
+        <span class="logo-icon">🧹</span>
+        <span class="logo-text">Winslopr</span>
+      </a>
+      <nav class="nav-links" id="main-navigation">
+        <a href="#features" class="nav-item">Features</a>
+        <a href="#smart-throttle" class="nav-item">Smart-Throttling</a>
+        <a href="#usage" class="nav-item">CLI Reference</a>
+        <a href="https://github.com/builtbybel/Winslopr" target="_blank" rel="noopener noreferrer" class="github-button" id="nav-github-btn">
+          <svg class="github-icon" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+          </svg>
+          Star on GitHub
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+      <div class="hero-glow primary-glow"></div>
+      <div class="hero-glow secondary-glow"></div>
+      
+      <div class="hero-container">
+        <div class="hero-content">
+          <div class="badge-container">
+            <span class="hero-badge">Windows 10 / 11 Utility</span>
+          </div>
+          <h1 class="hero-title">
+            Take Back Control of Your <span class="gradient-text">Windows PC</span>
+          </h1>
+          <p class="hero-subtitle">
+            Say goodbye to <strong>Windows Slop</strong>. Eliminate telemetry tracking, remove heavy AI bloatware like Recall & Copilot, safely clean temp cache, and optimize system startup processes for speeds under <strong>5 seconds</strong>.
+          </p>
+          
+          <!-- Direct Installer Copy Block -->
+          <div class="installer-wrapper">
+            <div class="installer-bar" id="install-command-bar">
+              <span class="shell-prompt">powershell -c</span>
+              <code class="install-code" id="cmd-text">npx winslopr</code>
+              <button class="copy-btn" id="copy-installer-btn" aria-label="Copy installation command">
+                <span class="copy-text" id="copy-btn-text">Copy</span>
+                <span class="copy-icon" id="copy-btn-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                </span>
+              </button>
+            </div>
+            <p class="install-subtext">💡 Make sure to run your terminal as an <strong>Administrator</strong>.</p>
+          </div>
+
+          <div class="hero-actions">
+            <a href="#features" class="btn btn-primary">Explore Features</a>
+            <a href="https://github.com/builtbybel/Winslopr" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">View Repository</a>
+          </div>
+        </div>
+
+        <!-- Animated Terminal Block -->
+        <div class="terminal-container" id="terminal-simulator-block">
+          <div class="terminal-header">
+            <div class="terminal-buttons">
+              <span class="terminal-dot close"></span>
+              <span class="terminal-dot minimize"></span>
+              <span class="terminal-dot maximize"></span>
+            </div>
+            <span class="terminal-title">Administrator: PowerShell (Winslopr CLI)</span>
+          </div>
+          <div class="terminal-body" id="terminal-body-stream">
+            <div class="terminal-line"><span class="term-prompt">PS C:\Windows\system32&gt;</span> <span class="term-typed">npx winslopr</span></div>
+            <div class="terminal-loader" id="terminal-playback">
+              <!-- Animated sequence will be generated and run via JS here -->
+              <span class="terminal-cursor">|</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Key Features Grid -->
+    <section class="features" id="features">
+      <div class="section-container">
+        <div class="section-header">
+          <h2 class="section-title">Clean Windows. Remove Bloat. <span class="gradient-text">Boost Boot Speeds.</span></h2>
+          <p class="section-subtitle">Winslopr consolidates multiple heavy utility jobs into a single clean CLI dashboard while safeguarding sensitive Windows libraries.</p>
+        </div>
+        
+        <div class="grid-features">
+          <div class="feature-card animate-hover">
+            <div class="feature-icon bg-rose">🧹</div>
+            <h3 class="feature-card-title">Slop Removal</h3>
+            <p class="feature-card-text">Disables AI features like <strong>Copilot</strong> and <strong>Recall</strong>, removes Bing Search from the Start Menu, and severely restricts background telemetry.</p>
+          </div>
+
+          <div class="feature-card animate-hover">
+            <div class="feature-icon bg-cyan">⚡</div>
+            <h3 class="feature-card-title">Smart Startup Optimization</h3>
+            <p class="feature-card-text">Ensures your computer boots in <strong>under 5 seconds</strong> by throttling disk scans (SFC, DISM) and drive optimizations to run at controlled intervals instead of hogging boot resources daily.</p>
+          </div>
+
+          <div class="feature-card animate-hover">
+            <div class="feature-icon bg-blue">🔄</div>
+            <h3 class="feature-card-title">Aggregated Software Upgrades</h3>
+            <p class="feature-card-text">Maintains your system securely by executing all available core updates from **Windows Update**, **Winget**, and **Chocolatey** simultaneously.</p>
+          </div>
+
+          <div class="feature-card animate-hover">
+            <div class="feature-icon bg-purple">🛠️</div>
+            <h3 class="feature-card-title">System Health Checks</h3>
+            <p class="feature-card-text">Cleans up and verifies health with built-in command integrations of Windows System File Checker (SFC) and DISM Component Store repair.</p>
+          </div>
+
+          <div class="feature-card animate-hover">
+            <div class="feature-icon bg-teal">🧼</div>
+            <h3 class="feature-card-title">Intelligent Temp Cleanup</h3>
+            <p class="feature-card-text">Flushes deep cache temp directories, flushes local DNS resolvers, optimizes fixed logical drives, and empties the Recycle Bin safely.</p>
+          </div>
+
+          <div class="feature-card animate-hover">
+            <div class="feature-icon bg-indigo">🌐</div>
+            <h3 class="feature-card-title">Network Stack Repair</h3>
+            <p class="feature-card-text">Resets the Winsock interface, clears IP protocols, and automatically applies stability configurations to prevent network drops on common 2.5GbE adapters.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Smart Throttling Interactive Showcase -->
+    <section class="smart-throttle-section" id="smart-throttle">
+      <div class="section-container">
+        <div class="throttle-flex-container">
+          <div class="throttle-info-panel">
+            <div class="badge-container">
+              <span class="hero-badge color-cyan">Smart-Throttling Logic</span>
+            </div>
+            <h2 class="section-title text-left">Startup shouldn't take <span class="gradient-text-alt">30 minutes.</span></h2>
+            <p class="section-subtitle text-left">
+              Running heavy disk tools, full scans, and package queries on <em>every single boot</em> ruins system performance. 
+            </p>
+            <p class="throttle-desc">
+              Winslopr uses an intelligent persistent state file (<code>winslopr-state.json</code>) to monitor exactly when tasks last succeeded. If a task isn't due yet, it skips it instantly, allowing a rapid boot.
+            </p>
+            <div class="throttle-feature-list">
+              <div class="throttle-li">
+                <span class="li-icon">✓</span>
+                <span class="li-text"><strong>Non-interactive Mode:</strong> Set it to run in Windows Task Scheduler and let it manage maintenance silently in the background.</span>
+              </div>
+              <div class="throttle-li">
+                <span class="li-icon">✓</span>
+                <span class="li-text"><strong>Smart Skip:</strong> Tasks like SFC / DISM run only once every 14 days by default.</span>
+              </div>
+              <div class="throttle-li">
+                <span class="li-icon">✓</span>
+                <span class="li-text"><strong>Bypass Switch:</strong> Force override intervals easily during active sessions using the <code>--force</code> or <code>-f</code> flags.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Interactive Search & Table -->
+          <div class="throttle-table-panel glass-card">
+            <div class="table-header-controls">
+              <h3 class="table-card-title">Task Intervals Explorer</h3>
+              <div class="search-box-wrapper">
+                <input type="text" id="throttle-search" placeholder="Search tasks (e.g. sfc, winget)..." aria-label="Search system tasks">
+              </div>
+            </div>
+            
+            <div class="table-wrapper">
+              <table class="throttle-table" id="tasks-table">
+                <thead>
+                  <tr>
+                    <th>Key</th>
+                    <th>Task Name</th>
+                    <th>Runs At Most Once Every</th>
+                  </tr>
+                </thead>
+                <tbody id="tasks-table-body">
+                  <!-- JS will dynamically populate rows for smooth interactions, fallback to basic static items for accessibility -->
+                  <tr data-keys="slop windows telemetry">
+                    <td><code>slop</code></td>
+                    <td>Remove Windows Slop & Telemetry</td>
+                    <td><span class="status-badge instant">Every single run</span></td>
+                  </tr>
+                  <tr data-keys="cleanup temp files cache">
+                    <td><code>cleanup</code></td>
+                    <td>Clean Temporary Files</td>
+                    <td><span class="status-badge days">1 day</span></td>
+                  </tr>
+                  <tr data-keys="winget upgrade software updates">
+                    <td><code>winget</code></td>
+                    <td>Update Winget Software</td>
+                    <td><span class="status-badge days">3 days</span></td>
+                  </tr>
+                  <tr data-keys="winupdate windows updates check">
+                    <td><code>winUpdate</code></td>
+                    <td>Windows Updates scan & install</td>
+                    <td><span class="status-badge weeks">7 days</span></td>
+                  </tr>
+                  <tr data-keys="network repair reset winsock">
+                    <td><code>network</code></td>
+                    <td>Repair Network Stack</td>
+                    <td><span class="status-badge weeks">7 days</span></td>
+                  </tr>
+                  <tr data-keys="sfc system file checker scannow">
+                    <td><code>sfc</code></td>
+                    <td>Run System File Checker (SFC)</td>
+                    <td><span class="status-badge month">14 days</span></td>
+                  </tr>
+                  <tr data-keys="dism component store repair health">
+                    <td><code>dism</code></td>
+                    <td>DISM Health Repairs</td>
+                    <td><span class="status-badge month">14 days</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CLI Options Section -->
+    <section class="usage-section" id="usage">
+      <div class="section-container">
+        <div class="section-header">
+          <h2 class="section-title">Command Line <span class="gradient-text">Options Reference</span></h2>
+          <p class="section-subtitle">Customize the clean-up routines directly using simple command switches.</p>
+        </div>
+
+        <div class="usage-tabs-container">
+          <!-- Left: Tab Selectors -->
+          <div class="usage-tabs-nav" role="tablist" aria-label="CLI Options Tabs">
+            <button class="tab-nav-btn active" role="tab" aria-selected="true" aria-controls="panel-flags" id="tab-flags">⚙️ CLI Flags</button>
+            <button class="tab-nav-btn" role="tab" aria-selected="false" aria-controls="panel-examples" id="tab-examples">💡 Pro Examples</button>
+            <button class="tab-nav-btn" role="tab" aria-selected="false" aria-controls="panel-startup" id="tab-startup">⏰ Boot Automation</button>
+          </div>
+
+          <!-- Right: Tab Panels -->
+          <div class="usage-tabs-content">
+            
+            <!-- Panel 1: CLI Flags -->
+            <div class="tab-panel active" id="panel-flags" role="tabpanel" aria-labelledby="tab-flags">
+              <div class="flags-grid">
+                <div class="flag-row">
+                  <div class="flag-cell-name"><code>--yes</code>, <code>-y</code></div>
+                  <div class="flag-cell-desc"><strong>"Yes to All" mode.</strong> Automatically accepts all update/install checks. Skips interactive confirmation.</div>
+                </div>
+                <div class="flag-row">
+                  <div class="flag-cell-name"><code>--silent</code>, <code>-s</code></div>
+                  <div class="flag-cell-desc"><strong>Non-interactive mode.</strong> Skips the main selection menu, runs the default check list, and applies Smart-Throttling. Perfect for background tasks.</div>
+                </div>
+                <div class="flag-row">
+                  <div class="flag-cell-name"><code>--force</code>, <code>-f</code></div>
+                  <div class="flag-cell-desc"><strong>Force mode.</strong> Overrides and ignores all Smart-Throttle duration windows, forcing all active tasks to run.</div>
+                </div>
+                <div class="flag-row">
+                  <div class="flag-cell-name"><code>--no-throttle</code></div>
+                  <div class="flag-cell-desc">Disables state loading and skips writing to the local state file, running in non-throttled mode.</div>
+                </div>
+                <div class="flag-row">
+                  <div class="flag-cell-name"><code>--info</code>, <code>-i</code></div>
+                  <div class="flag-cell-desc"><strong>Information Mode.</strong> Instantly query and print out detailed OS, Motherboard, GPU (with VRAM), and memory diagnostics, then immediately exit.</div>
+                </div>
+                <div class="flag-row">
+                  <div class="flag-cell-name"><code>--tasks</code>, <code>-t</code></div>
+                  <div class="flag-cell-desc"><strong>Target specific jobs.</strong> Pass key names to run specific maintenance directly (e.g. <code>-t sfc dns</code>).</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Panel 2: Pro Examples -->
+            <div class="tab-panel" id="panel-examples" role="tabpanel" aria-labelledby="tab-examples">
+              <div class="code-example-block">
+                <h4>1. Fully Silent Maintenance (Standard Auto Run)</h4>
+                <p class="code-explain">Runs default checks, skips prompt questions, installs necessary packages, and applies Smart-Throttling intervals.</p>
+                <div class="code-snippet-box">
+                  <code>npx winslopr -s -y</code>
+                </div>
+              </div>
+
+              <div class="code-example-block">
+                <h4>2. Forced Clean-up Override</h4>
+                <p class="code-explain">Bypasses the throttling intervals completely and forces a deep SFC, DISM, and drive defragmentation check right now.</p>
+                <div class="code-snippet-box">
+                  <code>npx winslopr -s -y -f</code>
+                </div>
+              </div>
+
+              <div class="code-example-block">
+                <h4>3. Diagnostics-Only Mode</h4>
+                <p class="code-explain">Exits quickly after presenting all core system information specs.</p>
+                <div class="code-snippet-box">
+                  <code>npx winslopr -i</code>
+                </div>
+              </div>
+            </div>
+
+            <!-- Panel 3: Boot Automation -->
+            <div class="tab-panel" id="panel-startup" role="tabpanel" aria-labelledby="tab-startup">
+              <div class="startup-explanation">
+                <h3>Scheduled Background Task Installation</h3>
+                <p>Ensure your computer keeps running pristine clean and fully upgraded by setting up Winslopr to run silently in the background at every user login.</p>
+                
+                <div class="alert-box note">
+                  <p><strong>Note:</strong> Installing the scheduler requires opening your shell as a local <strong>Administrator</strong>.</p>
+                </div>
+
+                <div class="step-guide">
+                  <div class="step-guide-item">
+                    <span class="step-num">1</span>
+                    <div class="step-content">
+                      <h4>Install the Task Scheduler</h4>
+                      <p>Run the built-in setup script inside the Winslopr folder to configure the Windows Task Scheduler task automatically.</p>
+                      <div class="code-snippet-box select-all">
+                        <code>npm run startup:install</code>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="step-guide-item">
+                    <span class="step-num">2</span>
+                    <div class="step-content">
+                      <h4>Uninstall / Remove Automation</h4>
+                      <p>If you need to remove the task from the Windows system at any time, run:</p>
+                      <div class="code-snippet-box select-all">
+                        <code>npm run startup:uninstall</code>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-bottom">
+      <div class="hero-glow secondary-glow cta-glow"></div>
+      <div class="section-container cta-container">
+        <h2>Enjoy a cleaner, faster Windows environment today.</h2>
+        <p>Winslopr is open-source, lightweight, and requires no permanent installation overhead.</p>
+        <div class="cta-actions">
+          <a href="#home" class="btn btn-primary">Try Now</a>
+          <a href="https://github.com/builtbybel/Winslopr" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">Give it a ⭐ on GitHub</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer Section -->
+  <footer class="footer">
+    <div class="section-container footer-container">
+      <div class="footer-left">
+        <span class="footer-logo">🧹 Winslopr</span>
+        <p class="footer-desc">A professional maintenance utility to clean slop and boost stability for Windows power-users.</p>
+      </div>
+      <div class="footer-right">
+        <p class="footer-credits">Created by <a href="https://github.com/builtbybel" target="_blank" rel="noopener noreferrer">builtbybel</a>. Licensed under the ISC License.</p>
+        <p class="footer-repo-link"><a href="https://github.com/builtbybel/Winslopr" target="_blank" rel="noopener noreferrer">GitHub Repository</a> • <a href="https://github.com/builtbybel/Winslopr/issues" target="_blank" rel="noopener noreferrer">Report an Issue</a></p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
