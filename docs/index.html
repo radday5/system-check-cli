@@ -80,7 +80,7 @@
                 </span>
               </button>
             </div>
-            <p class="install-subtext">💡 Make sure to run your terminal as an <strong>Administrator</strong>.</p>
+            <p class="install-subtext">💡 Requires <strong>Node.js (v20+)</strong> and terminal run as <strong>Administrator</strong>. See <a href="#usage" class="prereq-link" onclick="document.getElementById('tab-prereqs').click();">Prerequisites</a>.</p>
           </div>
 
           <div class="hero-actions">
@@ -263,16 +263,67 @@
         <div class="usage-tabs-container">
           <!-- Left: Tab Selectors -->
           <div class="usage-tabs-nav" role="tablist" aria-label="CLI Options Tabs">
-            <button class="tab-nav-btn active" role="tab" aria-selected="true" aria-controls="panel-flags" id="tab-flags">⚙️ CLI Flags</button>
+            <button class="tab-nav-btn active" role="tab" aria-selected="true" aria-controls="panel-prereqs" id="tab-prereqs">📋 Prerequisites</button>
+            <button class="tab-nav-btn" role="tab" aria-selected="false" aria-controls="panel-flags" id="tab-flags">⚙️ CLI Flags</button>
             <button class="tab-nav-btn" role="tab" aria-selected="false" aria-controls="panel-examples" id="tab-examples">💡 Pro Examples</button>
             <button class="tab-nav-btn" role="tab" aria-selected="false" aria-controls="panel-startup" id="tab-startup">⏰ Boot Automation</button>
           </div>
 
           <!-- Right: Tab Panels -->
           <div class="usage-tabs-content">
+
+            <!-- Panel 0: Prerequisites -->
+            <div class="tab-panel active" id="panel-prereqs" role="tabpanel" aria-labelledby="tab-prereqs">
+              <div class="prereqs-content">
+                <h3>System Prerequisites & Dependencies</h3>
+                <p>Before running Winslopr, ensure your system meets these basic requirements. Since the utility performs low-level Windows maintenance, specific components and elevated access are mandatory.</p>
+                
+                <div class="prereqs-grid">
+                  <!-- Node.js Requirement -->
+                  <div class="prereq-card">
+                    <div class="prereq-card-header">
+                      <span class="prereq-icon">🟢</span>
+                      <h4>Node.js Runtime (Required)</h4>
+                    </div>
+                    <p>Winslopr is built on the Node.js framework. To run the utility instantly via <code>npx</code> or standard scripts, you must have **Node.js v20.0.0 or higher** installed.</p>
+                    <div class="prereq-actions">
+                      <a href="https://nodejs.org/" target="_blank" rel="noopener noreferrer" class="btn btn-tiny btn-primary">Download Official Installer</a>
+                      <span class="prereq-or">or install instantly using your package manager:</span>
+                      <div class="code-snippet-box select-all">
+                        <code>winget install OpenJS.NodeJS</code>
+                      </div>
+                      <div class="code-snippet-box select-all">
+                        <code>choco install nodejs</code>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Administrator Privileges -->
+                  <div class="prereq-card">
+                    <div class="prereq-card-header">
+                      <span class="prereq-icon">🛡️</span>
+                      <h4>Administrator Rights (Required)</h4>
+                    </div>
+                    <p>Low-level tasks (blocking telemetry, removing system bloatware, resetting network stacks, running SFC & DISM scans) require elevated system permissions. You must open your terminal or PowerShell window **as an Administrator**.</p>
+                    <div class="alert-box warning">
+                      <p>Running the CLI in a non-admin session will trigger safety aborts or skip core repairs.</p>
+                    </div>
+                  </div>
+
+                  <!-- OS Compatibility -->
+                  <div class="prereq-card">
+                    <div class="prereq-card-header">
+                      <span class="prereq-icon">💻</span>
+                      <h4>Operating System Compatibility</h4>
+                    </div>
+                    <p>Winslopr is custom-engineered specifically for **Windows 10 and Windows 11**. It relies directly on native Windows tools (SFC, DISM, defrag, winget) and registry modification policies that do not exist on other platforms.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
             
             <!-- Panel 1: CLI Flags -->
-            <div class="tab-panel active" id="panel-flags" role="tabpanel" aria-labelledby="tab-flags">
+            <div class="tab-panel" id="panel-flags" role="tabpanel" aria-labelledby="tab-flags">
               <div class="flags-grid">
                 <div class="flag-row">
                   <div class="flag-cell-name"><code>--yes</code>, <code>-y</code></div>
