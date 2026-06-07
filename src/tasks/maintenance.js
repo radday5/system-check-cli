@@ -3,7 +3,16 @@ import { runCommand, runPowerShell, runTask } from '../utils/helpers.js';
 
 export async function runDismCheck() {
     return runTask('Checking DISM Health', async () => {
-        await runCommand('Dism.exe', ['/Online', '/Cleanup-Image', '/CheckHealth'], { stream: true });
+        const { stdout } = await runCommand('Dism.exe', ['/Online', '/Cleanup-Image', '/CheckHealth']);
+        console.log(chalk.gray('\n' + stdout.trim()));
+        
+        const isCorrupt = stdout.toLowerCase().includes('repairable') || stdout.toLowerCase().includes('corruption');
+        if (isCorrupt) {
+            console.log(chalk.yellow('  Component store corruption detected! Running automatic repair (/RestoreHealth)...'));
+            await runCommand('Dism.exe', ['/Online', '/Cleanup-Image', '/RestoreHealth'], { stream: true });
+            return { message: 'Component store corruption detected and successfully repaired.' };
+        }
+        return { message: 'No component store corruption detected.' };
     });
 }
 

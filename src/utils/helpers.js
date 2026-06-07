@@ -68,7 +68,11 @@ export async function runCommand(command, args = [], options = {}) {
                 resolve({ stdout, stderr });
             } else {
                 const errorMsg = stream ? `Command failed with exit code ${code}` : `Command failed with exit code ${code}\n${stderr}`;
-                reject(new Error(errorMsg));
+                const err = new Error(errorMsg);
+                err.code = code;
+                err.stdout = stdout;
+                err.stderr = stderr;
+                reject(err);
             }
         });
 

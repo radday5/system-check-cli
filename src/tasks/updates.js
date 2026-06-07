@@ -76,6 +76,13 @@ export async function runWindowsUpdates(argv) {
 export async function runWingetUpdates(argv) {
     return runTask('Updating Winget Software', async () => {
         try {
+            await runCommand('winget', ['--version']);
+        } catch (error) {
+            await writeLog('Winget is not installed or not in PATH. Skipping Winget updates.', 'INFO');
+            return { message: 'Winget is not installed (skipped).' };
+        }
+
+        try {
             await runCommand('winget', ['source', 'update']);
         } catch (error) {
             // Ignore internal errors on source update, as it often works anyway or fails transiently
@@ -134,13 +141,26 @@ export async function runChocoUpdates(argv) {
         try {
             await runCommand('choco', ['--version']);
         } catch (error) {
-            throw new Error('Chocolatey is not installed or not in your PATH.');
+            await writeLog('Chocolatey is not installed or not in PATH. Skipping Chocolatey updates.', 'INFO');
+            return { message: 'Chocolatey is not installed (skipped).' };
         }
 
-        const { stdout } = await runCommand('choco', ['outdated']);
+        let stdout = '';
+        try {
+            const result = await runCommand('choco', ['outdated']);
+            stdout = result.stdout;
+        } catch (error) {
+            // choco outdated returns exit code 2 when there are outdated packages.
+            if (error.code === 2 && error.stdout) {
+                stdout = error.stdout;
+            } else {
+                throw error;
+            }
+        }
+
         console.log(chalk.gray('\n' + stdout.trim()));
 
-        if (stdout.includes('Chocolatey has determined 0 package(s) are outdated')) {
+        if (stdout.includes('Chocolatey has determined 0 package(s) are outdated') || stdout.trim() === '') {
             return { message: 'All Chocolatey packages are up to date.' };
         }
 

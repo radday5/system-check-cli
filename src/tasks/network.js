@@ -5,25 +5,35 @@ import { runCommand, runPowerShell, runTask, writeLog } from '../utils/helpers.j
 export async function runNetworkRepair(argv) {
     return runTask('Repairing Network Stack & Adapters', async () => {
         console.log(chalk.yellow('  Resetting Winsock and IP stack...'));
-        try {
-            await runCommand('netsh', ['winsock', 'reset']);
-            await runCommand('netsh', ['int', 'ip', 'reset']);
-            await runCommand('netsh', ['int', 'ipv6', 'reset']);
-        } catch (error) {
-            const msg = error.message.includes('Access is denied') 
-                ? 'Network stack reset partially failed (Access denied on some keys). This is common and usually requires a reboot.' 
-                : error.message;
-            await writeLog(`Network stack reset issues: ${msg}`, 'DEBUG');
-            console.log(chalk.gray(`  Note: ${msg}`));
+        const netshCommands = [
+            ['winsock', 'reset'],
+            ['int', 'ip', 'reset'],
+            ['int', 'ipv6', 'reset']
+        ];
+        for (const args of netshCommands) {
+            try {
+                await runCommand('netsh', args);
+            } catch (error) {
+                const msg = error.message.includes('Access is denied') 
+                    ? `netsh ${args.join(' ')} reset partially failed (Access denied). This is common and usually requires a reboot.` 
+                    : error.message;
+                await writeLog(`Network stack reset issues (netsh ${args.join(' ')}): ${msg}`, 'DEBUG');
+                console.log(chalk.gray(`  Note: ${msg}`));
+            }
         }
 
         console.log(chalk.yellow('  Flushing DNS and renewing IP...'));
-        try {
-            await runCommand('ipconfig', ['/flushdns']);
-            await runCommand('ipconfig', ['/release']);
-            await runCommand('ipconfig', ['/renew']);
-        } catch (error) {
-            await writeLog(`IP renewal had some issues: ${error.message}`, 'DEBUG');
+        const ipconfigCommands = [
+            ['/flushdns'],
+            ['/release'],
+            ['/renew']
+        ];
+        for (const args of ipconfigCommands) {
+            try {
+                await runCommand('ipconfig', args);
+            } catch (error) {
+                await writeLog(`IP command failed (ipconfig ${args.join(' ')}): ${error.message}`, 'DEBUG');
+            }
         }
 
         // Stability fixes for Intel I225-V, Realtek 2.5GbE and other adapters known for link drops
