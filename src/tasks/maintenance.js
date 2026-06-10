@@ -6,7 +6,7 @@ export async function runDismCheck() {
         const { stdout } = await runCommand('Dism.exe', ['/Online', '/Cleanup-Image', '/CheckHealth']);
         console.log(chalk.gray('\n' + stdout.trim()));
         
-        const isCorrupt = stdout.toLowerCase().includes('repairable') || stdout.toLowerCase().includes('corruption');
+        const isCorrupt = (stdout.toLowerCase().includes('repairable') || stdout.toLowerCase().includes('corruption')) && !stdout.toLowerCase().includes('no component store corruption');
         if (isCorrupt) {
             console.log(chalk.yellow('  Component store corruption detected! Running automatic repair (/RestoreHealth)...'));
             await runCommand('Dism.exe', ['/Online', '/Cleanup-Image', '/RestoreHealth'], { stream: true });
