@@ -15,7 +15,7 @@ export const DEFAULT_TASKS_CONFIG = {
     cleanup: { name: 'Clean Temporary Files', checked: true, intervalDays: 1 },
     recyclebin: { name: 'Empty Recycle Bin', checked: true, intervalDays: 1 },
     cuttingEdge: { name: 'Cutting-Edge Windows 11 Enhancements (HAGS, Sudo, Xbox Mode)', checked: true, intervalDays: 3 },
-    diskcleanup: { name: 'Run Windows Disk Cleanup (Cleanmgr)', checked: false, intervalDays: 14 },
+    diskcleanup: { name: 'Run Windows Disk Cleanup (PowerShell)', checked: false, intervalDays: 14 },
     wucleanup: { name: 'Clean Windows Update Download Cache', checked: true, intervalDays: 14 },
     dns: { name: 'Flush DNS Cache', checked: true, intervalDays: 0 },
     network: { name: 'Repair Network Stack & Reset Adapters', checked: true, intervalDays: 7 },

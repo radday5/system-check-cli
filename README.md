@@ -18,7 +18,7 @@ A powerful, interactive command-line tool built with Node.js to automate the rem
 -   **🧹 System Cleanup**:
     -   **Temp Files**: Safely clears Windows and User temporary folders (skipping sensitive app folders).
     -   **Recycle Bin**: Empties the Recycle Bin for all users.
-    -   **Disk Cleanup**: Runs Windows Disk Cleanup (`cleanmgr.exe`) in background.
+    -   **Disk Cleanup**: Runs Windows Disk Cleanup silently via PowerShell (cleans logs, cache, error reports).
     -   **DNS Cache**: Flushes the DNS resolver cache (`ipconfig /flushdns`).
     -   **Drive Optimization**: Runs `defrag /O` (Trim/Defrag) on all fixed logical drives.
 -   **🌐 Network Repair**: Resets Winsock/IP stack and applies stability fixes for common 2.5GbE adapters (Intel/Realtek).

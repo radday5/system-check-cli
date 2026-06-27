@@ -60,12 +60,41 @@ export async function runRecycleBinCleanup() {
 }
 
 export async function runDiskCleanup() {
-    return runTask('Running Windows Disk Cleanup (Cleanmgr)', async () => {
-        // Run cleanmgr in background as it can take a long time and doesn't provide much console feedback
-        // /sagerun:1 is a common trick, but requires prior setup. 
-        // We'll just run it with /VERYLOWDISK which is non-interactive and cleans up a lot.
-        await runCommand('cleanmgr.exe', ['/VERYLOWDISK']);
-        return { message: 'Disk Cleanup started/finished.' };
+    return runTask('Running Windows Disk Cleanup (PowerShell)', async () => {
+        const script = `
+            # Purge Delivery Optimization download cache
+            $doPath = "$env:SystemRoot\\SoftwareDistribution\\DeliveryOptimization\\Download"
+            if (Test-Path $doPath) {
+                Remove-Item -Path "$doPath\\*" -Recurse -Force -ErrorAction SilentlyContinue
+            }
+
+            # Purge Windows Error Reporting files
+            $werPaths = @(
+                "$env:ProgramData\\Microsoft\\Windows\\WER\\ReportQueue",
+                "$env:ProgramData\\Microsoft\\Windows\\WER\\ReportArchive",
+                "$env:LocalAppData\\Microsoft\\Windows\\WER\\ReportQueue",
+                "$env:LocalAppData\\Microsoft\\Windows\\WER\\ReportArchive"
+            )
+            foreach ($path in $werPaths) {
+                if (Test-Path $path) {
+                    Remove-Item -Path "$path\\*" -Recurse -Force -ErrorAction SilentlyContinue
+                }
+            }
+
+            # Purge DirectX Shader Cache
+            $shaderPath = "$env:LocalAppData\\D3DSCache"
+            if (Test-Path $shaderPath) {
+                Remove-Item -Path "$shaderPath\\*" -Recurse -Force -ErrorAction SilentlyContinue
+            }
+
+            # Purge system logs
+            $logsPath = "$env:SystemRoot\\Logs"
+            if (Test-Path $logsPath) {
+                Remove-Item -Path "$logsPath\\*" -Recurse -Force -ErrorAction SilentlyContinue
+            }
+        `;
+        await runPowerShell(script);
+        return { message: 'System caches, logs, and error reports purged.' };
     });
 }
 
