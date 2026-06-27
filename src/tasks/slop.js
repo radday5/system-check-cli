@@ -21,7 +21,22 @@ export async function runSlopRemoval() {
                 
                 # Cloud Bloatware & Spotlight Recommendations
                 @{ Path = "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\CloudContent"; Name = "DisableWindowsConsumerFeatures"; Value = 1; Type = "DWord" },
-                @{ Path = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager"; Name = "SilentInstalledAppsEnabled"; Value = 0; Type = "DWord" }
+                @{ Path = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager"; Name = "SilentInstalledAppsEnabled"; Value = 0; Type = "DWord" },
+                
+                # Advertising ID
+                @{ Path = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo"; Name = "Enabled"; Value = 0; Type = "DWord" },
+                
+                # Feedback & Diagnostics
+                @{ Path = "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection"; Name = "DoNotShowFeedbackNotifications"; Value = 1; Type = "DWord" },
+                
+                # News & Interests (Widgets)
+                @{ Path = "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Dsh"; Name = "AllowNewsAndInterests"; Value = 0; Type = "DWord" },
+                
+                # Windows Spotlight & Suggestions
+                @{ Path = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager"; Name = "SubscribedContent-338387Enabled"; Value = 0; Type = "DWord" },
+                @{ Path = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager"; Name = "SubscribedContent-338388Enabled"; Value = 0; Type = "DWord" },
+                @{ Path = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager"; Name = "SubscribedContent-338389Enabled"; Value = 0; Type = "DWord" },
+                @{ Path = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager"; Name = "SubscribedContent-353636Enabled"; Value = 0; Type = "DWord" }
             )
 
             foreach ($reg in $registryPaths) {

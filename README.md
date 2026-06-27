@@ -64,6 +64,64 @@ You can customize how the tool runs using flags:
 | `--no-throttle` | | **Disable throttling.** Disables the last-run check entirely for the session. |
 | `--info` | `-i` | **System Info mode.** Displays hardware and OS information and then exits. |
 | `--tasks` | `-t` | **Specific tasks.** Run only selected tasks (e.g., `-t dns slop`). |
+| `--config` | `-c` | **Custom Configuration.** Path to a custom configuration JSON file. |
+
+## ⚙️ Custom Configuration File
+
+Winslopr supports loading custom configuration files (named `winslopr.config.json`, `.winsloprrc.json`, or `.winsloprrc`) to change default task execution statuses and throttling intervals.
+
+Winslopr automatically searches for these files in:
+1. The **current working directory** where you run the tool.
+2. The **user home directory** (`%USERPROFILE%`).
+
+Alternatively, you can specify a custom path using the `--config` (or `-c`) flag:
+```bash
+npx winslopr -c "C:\path\to\custom-config.json"
+```
+
+### Configuration Format
+
+Create a JSON file with the following structure. You can customize the `tasks` (enabled by default in interactive/silent mode) and `intervals` (throttle days):
+
+```json
+{
+  "tasks": {
+    "slop": true,
+    "hwInfo": true,
+    "winUpdate": false,
+    "winget": true,
+    "choco": false,
+    "dism": false,
+    "sfc": false,
+    "cleanup": true,
+    "recyclebin": true,
+    "cuttingEdge": true,
+    "diskcleanup": false,
+    "wucleanup": true,
+    "dns": true,
+    "network": false,
+    "optimize": false
+  },
+  "intervals": {
+    "cleanup": 2,
+    "recyclebin": 2,
+    "winget": 5,
+    "choco": 5,
+    "cuttingEdge": 5,
+    "winUpdate": 14,
+    "network": 14,
+    "dism": 30,
+    "sfc": 30,
+    "diskcleanup": 30,
+    "wucleanup": 30,
+    "optimize": 30
+  }
+}
+```
+
+- **`tasks`**: Keys correspond to the task names. Set to `true` to enable by default, or `false` to disable.
+- **`intervals`**: The number of days to wait before running the task again in silent/non-interactive mode.
+
 
 ### ⚡ Smart-Throttle Intervals
 

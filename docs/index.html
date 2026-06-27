@@ -209,39 +209,79 @@
                 </thead>
                 <tbody id="tasks-table-body">
                   <!-- JS will dynamically populate rows for smooth interactions, fallback to basic static items for accessibility -->
-                  <tr data-keys="slop windows telemetry">
+                  <tr data-keys="slop windows telemetry bloatware recall copilot bing">
                     <td><code>slop</code></td>
-                    <td>Remove Windows Slop & Telemetry</td>
+                    <td>Remove Windows Slop (AI, Telemetry, Bing)</td>
                     <td><span class="status-badge instant">Every single run</span></td>
                   </tr>
-                  <tr data-keys="cleanup temp files cache">
+                  <tr data-keys="hwinfo hardware system cpu gpu ram motherboard disk specs">
+                    <td><code>hwInfo</code></td>
+                    <td>Gather Hardware & OS Information</td>
+                    <td><span class="status-badge instant">Every single run</span></td>
+                  </tr>
+                  <tr data-keys="dns flush resolver cache ipconfig">
+                    <td><code>dns</code></td>
+                    <td>Flush DNS Cache</td>
+                    <td><span class="status-badge instant">Every single run</span></td>
+                  </tr>
+                  <tr data-keys="cleanup temp files cache system user folders">
                     <td><code>cleanup</code></td>
                     <td>Clean Temporary Files</td>
                     <td><span class="status-badge days">1 day</span></td>
                   </tr>
-                  <tr data-keys="winget upgrade software updates">
+                  <tr data-keys="recyclebin empty bin space trash">
+                    <td><code>recyclebin</code></td>
+                    <td>Empty Recycle Bin</td>
+                    <td><span class="status-badge days">1 day</span></td>
+                  </tr>
+                  <tr data-keys="winget upgrade software packages updates install">
                     <td><code>winget</code></td>
                     <td>Update Winget Software</td>
                     <td><span class="status-badge days">3 days</span></td>
                   </tr>
-                  <tr data-keys="winupdate windows updates check">
+                  <tr data-keys="choco chocolatey upgrade software packages updates install">
+                    <td><code>choco</code></td>
+                    <td>Update Chocolatey Software</td>
+                    <td><span class="status-badge days">3 days</span></td>
+                  </tr>
+                  <tr data-keys="cuttingedge hags game mode performance xbox sudo features">
+                    <td><code>cuttingEdge</code></td>
+                    <td>Windows 11 Cutting-Edge Enhancements</td>
+                    <td><span class="status-badge days">3 days</span></td>
+                  </tr>
+                  <tr data-keys="winupdate windows updates check patch critical scans install">
                     <td><code>winUpdate</code></td>
-                    <td>Windows Updates scan & install</td>
+                    <td>Check & Install Windows Updates</td>
                     <td><span class="status-badge weeks">7 days</span></td>
                   </tr>
-                  <tr data-keys="network repair reset winsock">
+                  <tr data-keys="network repair reset winsock adapter ip configuration">
                     <td><code>network</code></td>
-                    <td>Repair Network Stack</td>
+                    <td>Repair Network Stack & Reset Adapters</td>
                     <td><span class="status-badge weeks">7 days</span></td>
                   </tr>
-                  <tr data-keys="sfc system file checker scannow">
+                  <tr data-keys="sfc system file checker scannow repair integrity corrupt">
                     <td><code>sfc</code></td>
                     <td>Run System File Checker (SFC)</td>
                     <td><span class="status-badge month">14 days</span></td>
                   </tr>
-                  <tr data-keys="dism component store repair health">
+                  <tr data-keys="dism component store health scan repair corrupt check">
                     <td><code>dism</code></td>
-                    <td>DISM Health Repairs</td>
+                    <td>Check DISM Health</td>
+                    <td><span class="status-badge month">14 days</span></td>
+                  </tr>
+                  <tr data-keys="diskcleanup cleanmgr windows storage clean space">
+                    <td><code>diskcleanup</code></td>
+                    <td>Run Windows Disk Cleanup (Cleanmgr)</td>
+                    <td><span class="status-badge month">14 days</span></td>
+                  </tr>
+                  <tr data-keys="wucleanup windows update download cache junk space">
+                    <td><code>wucleanup</code></td>
+                    <td>Clean Windows Update Download Cache</td>
+                    <td><span class="status-badge month">14 days</span></td>
+                  </tr>
+                  <tr data-keys="optimize drive defrag trim ssd hdd optimization defragmentation">
+                    <td><code>optimize</code></td>
+                    <td>Optimize All Fixed Drives (Trim/Defrag)</td>
                     <td><span class="status-badge month">14 days</span></td>
                   </tr>
                 </tbody>
@@ -267,6 +307,7 @@
             <button class="tab-nav-btn" role="tab" aria-selected="false" aria-controls="panel-flags" id="tab-flags">⚙️ CLI Flags</button>
             <button class="tab-nav-btn" role="tab" aria-selected="false" aria-controls="panel-examples" id="tab-examples">💡 Pro Examples</button>
             <button class="tab-nav-btn" role="tab" aria-selected="false" aria-controls="panel-startup" id="tab-startup">⏰ Boot Automation</button>
+            <button class="tab-nav-btn" role="tab" aria-selected="false" aria-controls="panel-config" id="tab-config">⚙️ Custom Config</button>
           </div>
 
           <!-- Right: Tab Panels -->
@@ -349,6 +390,10 @@
                   <div class="flag-cell-name"><code>--tasks</code>, <code>-t</code></div>
                   <div class="flag-cell-desc"><strong>Target specific jobs.</strong> Pass key names to run specific maintenance directly (e.g. <code>-t sfc dns</code>).</div>
                 </div>
+                <div class="flag-row">
+                  <div class="flag-cell-name"><code>--config</code>, <code>-c</code></div>
+                  <div class="flag-cell-desc"><strong>Custom Configuration.</strong> Path to a custom configuration JSON file containing custom task choices and intervals.</div>
+                </div>
               </div>
             </div>
 
@@ -375,6 +420,14 @@
                 <p class="code-explain">Exits quickly after presenting all core system information specs.</p>
                 <div class="code-snippet-box">
                   <code>npx winslopr -i</code>
+                </div>
+              </div>
+
+              <div class="code-example-block">
+                <h4>4. Load Custom Configuration File</h4>
+                <p class="code-explain">Runs Winslopr silently using custom task check states and throttle intervals defined in a JSON file.</p>
+                <div class="code-snippet-box">
+                  <code>npx winslopr -s -y -c "C:\path\to\config.json"</code>
                 </div>
               </div>
             </div>
@@ -411,6 +464,54 @@
                       </div>
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Panel 4: Custom Config -->
+            <div class="tab-panel" id="panel-config" role="tabpanel" aria-labelledby="tab-config">
+              <div class="config-explanation">
+                <h3>Custom Configuration JSON</h3>
+                <p>Winslopr automatically scans for configuration JSON files (named <code>winslopr.config.json</code>, <code>.winsloprrc.json</code>, or <code>.winsloprrc</code>) in the current directory or user profile directory. You can also specify one manually using <code>-c</code> or <code>--config</code>.</p>
+                
+                <div class="alert-box note">
+                  <p><strong>Config Structure:</strong> Create a JSON file with the <code>tasks</code> object (booleans) and <code>intervals</code> object (days) as shown below.</p>
+                </div>
+
+                <div class="code-snippet-box select-all" style="max-height: 250px; overflow-y: auto;">
+                  <pre><code style="font-family: 'Fira Code', monospace; font-size: 0.85rem; color: var(--color-text-bright);">{
+  "tasks": {
+    "slop": true,
+    "hwInfo": true,
+    "winUpdate": false,
+    "winget": true,
+    "choco": false,
+    "dism": false,
+    "sfc": false,
+    "cleanup": true,
+    "recyclebin": true,
+    "cuttingEdge": true,
+    "diskcleanup": false,
+    "wucleanup": true,
+    "dns": true,
+    "network": false,
+    "optimize": false
+  },
+  "intervals": {
+    "cleanup": 2,
+    "recyclebin": 2,
+    "winget": 5,
+    "choco": 5,
+    "cuttingEdge": 5,
+    "winUpdate": 14,
+    "network": 14,
+    "dism": 30,
+    "sfc": 30,
+    "diskcleanup": 30,
+    "wucleanup": 30,
+    "optimize": 30
+  }
+}</code></pre>
                 </div>
               </div>
             </div>

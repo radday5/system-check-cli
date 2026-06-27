@@ -115,7 +115,7 @@ function initTerminalSimulation() {
     { type: 'type', content: 'npx winslopr', speed: 100 },
     { type: 'wait', duration: 600 },
     
-    { type: 'log', style: 'log-bold', content: ' Winslopr v26.5.5' },
+    { type: 'log', style: 'log-bold', content: ' Winslopr v26.6.0' },
     { type: 'log', style: 'log-subtle', content: '==================================================' },
     { type: 'wait', duration: 400 },
     

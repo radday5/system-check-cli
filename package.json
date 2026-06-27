@@ -1,6 +1,6 @@
 {
   "name": "winslopr",
-  "version": "26.5.5",
+  "version": "26.6.0",
   "description": "A Node.js tool for removing Windows slop and system maintenance.",
   "main": "index.js",
   "type": "module",

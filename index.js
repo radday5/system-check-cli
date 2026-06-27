@@ -14,6 +14,7 @@ import {
     loadState,
     saveState
 } from './src/utils/helpers.js';
+import { loadConfig } from './src/utils/config.js';
 
 import { runSlopRemoval } from './src/tasks/slop.js';
 import { runHardwareCheck } from './src/tasks/systemInfo.js';
@@ -70,6 +71,11 @@ const argv = yargs(hideBin(process.argv))
     description: 'Disable the last run throttle checks entirely',
     default: false,
   })
+  .option('config', {
+    alias: 'c',
+    type: 'string',
+    description: 'Path to a custom configuration JSON file',
+  })
   .argv;
 
 async function main() {
@@ -82,6 +88,8 @@ async function main() {
     console.log(chalk.bold.cyan('=== Winslopr: Windows Slop Remover & Maintenance Tool ===\n'));
     await writeLog('Winslopr started.');
 
+    const config = await loadConfig(argv.config);
+
     if (argv.info) {
         await runHardwareCheck();
         process.exit(0);
@@ -90,21 +98,21 @@ async function main() {
     await checkAdmin();
 
     const tasks = {
-        slop: { name: 'Remove Windows Slop (AI, Telemetry, Bing)', task: () => runSlopRemoval(), checked: true },
-        hwInfo: { name: 'Gather Hardware & OS Information', task: () => runHardwareCheck(), checked: true },
-        winUpdate: { name: 'Check & Install Windows Updates', task: () => runWindowsUpdates(argv), checked: true },
-        winget: { name: 'Update Winget Software', task: () => runWingetUpdates(argv), checked: true },
-        choco: { name: 'Update Chocolatey Software', task: () => runChocoUpdates(argv), checked: true },
-        dism: { name: 'Check DISM Health', task: () => runDismCheck(), checked: true },
-        sfc: { name: 'Run System File Checker (SFC)', task: () => runSfcScan(), checked: true },
-        cleanup: { name: 'Clean Temporary Files', task: () => runTempFileCleanup(), checked: true },
-        recyclebin: { name: 'Empty Recycle Bin', task: () => runRecycleBinCleanup(), checked: true },
-        cuttingEdge: { name: 'Cutting-Edge Windows 11 Enhancements (HAGS, Sudo, Xbox Mode)', task: () => runCuttingEdgeEnhancements(argv), checked: true },
-        diskcleanup: { name: 'Run Windows Disk Cleanup (Cleanmgr)', task: () => runDiskCleanup(), checked: false },
-        wucleanup: { name: 'Clean Windows Update Download Cache', task: () => runWindowsUpdateCacheCleanup(), checked: true },
-        dns: { name: 'Flush DNS Cache', task: () => runDnsFlush(), checked: true },
-        network: { name: 'Repair Network Stack & Reset Adapters', task: () => runNetworkRepair(argv), checked: true },
-        optimize: { name: 'Optimize All Fixed Drives (Trim/Defrag)', task: () => runDiskOptimization(), checked: false },
+        slop: { name: config.slop.name, task: () => runSlopRemoval(), checked: config.slop.checked },
+        hwInfo: { name: config.hwInfo.name, task: () => runHardwareCheck(), checked: config.hwInfo.checked },
+        winUpdate: { name: config.winUpdate.name, task: () => runWindowsUpdates(argv), checked: config.winUpdate.checked },
+        winget: { name: config.winget.name, task: () => runWingetUpdates(argv), checked: config.winget.checked },
+        choco: { name: config.choco.name, task: () => runChocoUpdates(argv), checked: config.choco.checked },
+        dism: { name: config.dism.name, task: () => runDismCheck(), checked: config.dism.checked },
+        sfc: { name: config.sfc.name, task: () => runSfcScan(), checked: config.sfc.checked },
+        cleanup: { name: config.cleanup.name, task: () => runTempFileCleanup(), checked: config.cleanup.checked },
+        recyclebin: { name: config.recyclebin.name, task: () => runRecycleBinCleanup(), checked: config.recyclebin.checked },
+        cuttingEdge: { name: config.cuttingEdge.name, task: () => runCuttingEdgeEnhancements(argv), checked: config.cuttingEdge.checked },
+        diskcleanup: { name: config.diskcleanup.name, task: () => runDiskCleanup(), checked: config.diskcleanup.checked },
+        wucleanup: { name: config.wucleanup.name, task: () => runWindowsUpdateCacheCleanup(), checked: config.wucleanup.checked },
+        dns: { name: config.dns.name, task: () => runDnsFlush(), checked: config.dns.checked },
+        network: { name: config.network.name, task: () => runNetworkRepair(argv), checked: config.network.checked },
+        optimize: { name: config.optimize.name, task: () => runDiskOptimization(), checked: config.optimize.checked },
     };
 
     let tasksToRun = Object.keys(tasks).filter(key => tasks[key].checked);
@@ -137,23 +145,10 @@ async function main() {
     const state = await loadState();
     const now = Date.now();
     const msInDay = 24 * 60 * 60 * 1000;
-    const throttleIntervals = {
-        slop: 0,
-        hwInfo: 0,
-        dns: 0,
-        cleanup: 1 * msInDay,
-        recyclebin: 1 * msInDay,
-        cuttingEdge: 3 * msInDay,
-        winget: 3 * msInDay,
-        choco: 3 * msInDay,
-        winUpdate: 7 * msInDay,
-        network: 7 * msInDay,
-        dism: 14 * msInDay,
-        sfc: 14 * msInDay,
-        diskcleanup: 14 * msInDay,
-        wucleanup: 14 * msInDay,
-        optimize: 14 * msInDay,
-    };
+    const throttleIntervals = {};
+    for (const [key, value] of Object.entries(config)) {
+        throttleIntervals[key] = value.intervalDays * msInDay;
+    }
 
     const isThrottledSession = argv.silent && !argv.force && !argv['no-throttle'] && !argv.noThrottle;
 
