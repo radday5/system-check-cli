@@ -4,16 +4,21 @@ export async function runSlopRemoval() {
     return runTask('Removing Windows Slop (AI, Telemetry, Bing)', async () => {
         const script = `
             $registryPaths = @(
-                # Copilot and AI Features
+                # Copilot and AI Features (including Windows Recall)
                 @{ Path = "HKCU:\\Software\\Policies\\Microsoft\\Windows\\WindowsCopilot"; Name = "TurnOffWindowsCopilot"; Value = 1; Type = "DWord" },
                 @{ Path = "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsCopilot"; Name = "TurnOffWindowsCopilot"; Value = 1; Type = "DWord" },
                 @{ Path = "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows AI"; Name = "DisableAIDataAnalysis"; Value = 1; Type = "DWord" },
+                @{ Path = "HKCU:\\Software\\Policies\\Microsoft\\Windows\\Windows AI"; Name = "DisableAIDataAnalysis"; Value = 1; Type = "DWord" },
+                @{ Path = "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Recall"; Name = "DisableRecall"; Value = 1; Type = "DWord" },
+                @{ Path = "HKCU:\\Software\\Policies\\Microsoft\\Windows\\Recall"; Name = "DisableRecall"; Value = 1; Type = "DWord" },
                 @{ Path = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced"; Name = "ShowCopilotButton"; Value = 0; Type = "DWord" },
                 
                 # Start Menu Web Search & Bing
                 @{ Path = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Search"; Name = "BingSearchEnabled"; Value = 0; Type = "DWord" },
                 @{ Path = "HKCU:\\Software\\Policies\\Microsoft\\Windows\\Explorer"; Name = "DisableSearchBoxSuggestions"; Value = 1; Type = "DWord" },
                 @{ Path = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Search"; Name = "CortanaConsent"; Value = 0; Type = "DWord" },
+                @{ Path = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\SearchSettings"; Name = "IsDynamicSearchBoxEnabled"; Value = 0; Type = "DWord" },
+                @{ Path = "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Search"; Name = "EnableSearchHighlights"; Value = 0; Type = "DWord" },
                 
                 # Telemetry & Diagnostic Data
                 @{ Path = "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection"; Name = "AllowTelemetry"; Value = 0; Type = "DWord" },
@@ -29,8 +34,10 @@ export async function runSlopRemoval() {
                 # Feedback & Diagnostics
                 @{ Path = "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection"; Name = "DoNotShowFeedbackNotifications"; Value = 1; Type = "DWord" },
                 
-                # News & Interests (Widgets)
+                # News & Interests (Widgets) & Taskbar Slop (Widgets, Chat/Meet icons)
                 @{ Path = "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Dsh"; Name = "AllowNewsAndInterests"; Value = 0; Type = "DWord" },
+                @{ Path = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced"; Name = "TaskbarDa"; Value = 0; Type = "DWord" },
+                @{ Path = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced"; Name = "TaskbarMn"; Value = 0; Type = "DWord" },
                 
                 # Windows Spotlight & Suggestions
                 @{ Path = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager"; Name = "SubscribedContent-338387Enabled"; Value = 0; Type = "DWord" },

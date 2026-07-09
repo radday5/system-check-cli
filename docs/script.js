@@ -144,9 +144,10 @@ function initTerminalSimulation() {
     { type: 'log', style: 'log-subtle', content: '   [⚙] optimize    (Trim/Defrag Drives)   -> SKIPPED (Last run 8d ago)' },
     { type: 'wait', duration: 800 },
     
-    { type: 'spinner', content: '🧹 Cleaning Windows Slop (Removing telemetry, AI Recalls & Bing)...', duration: 1500 },
+    { type: 'spinner', content: '🧹 Cleaning Windows Slop (Removing telemetry, Recall, search highlights & widgets)...', duration: 1500 },
     { type: 'log', style: 'log-success', content: '   ✔ Disabled Microsoft Recall & Copilot background agents.' },
-    { type: 'log', style: 'log-success', content: '   ✔ Disabled Bing search results integration in Start.' },
+    { type: 'log', style: 'log-success', content: '   ✔ Disabled Bing search highlights & Start menu web search.' },
+    { type: 'log', style: 'log-success', content: '   ✔ Hidden taskbar Chat & Widgets shortcuts.' },
     { type: 'log', style: 'log-success', content: '   ✔ Registry tracking telemetry pipelines disabled.' },
     { type: 'wait', duration: 600 },
     
