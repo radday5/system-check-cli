@@ -18,25 +18,29 @@ export async function runTempFileCleanup() {
                 await writeLog(`Cleaning folder: ${tempPath}`);
                 const files = await fs.readdir(tempPath);
 
-                // Delete files in parallel for better performance
-                await Promise.all(files.map(file => {
-                    const filePath = path.join(tempPath, file);
-                    
-                    // Skip sensitive folders
-                    if (skipFolders.some(skip => file.includes(skip))) {
-                        skippedFiles++;
-                        return Promise.resolve();
-                    }
+                // Delete files in batches to prevent file handle exhaustion and high IO lag
+                const chunkSize = 50;
+                for (let i = 0; i < files.length; i += chunkSize) {
+                    const chunk = files.slice(i, i + chunkSize);
+                    await Promise.all(chunk.map(file => {
+                        const filePath = path.join(tempPath, file);
+                        
+                        // Skip sensitive folders
+                        if (skipFolders.some(skip => file.includes(skip))) {
+                            skippedFiles++;
+                            return Promise.resolve();
+                        }
 
-                    return fs.rm(filePath, { recursive: true, force: true }).then(() => {
-                        deletedFiles++;
-                    }).catch(err => {
-                        skippedFiles++;
-                        // Log busy files at a lower level (DEBUG) to avoid noise
-                        const level = err.code === 'EBUSY' ? 'DEBUG' : 'WARN';
-                        return writeLog(`Could not delete ${filePath}: ${err.message}`, level);
-                    });
-                }));
+                        return fs.rm(filePath, { recursive: true, force: true }).then(() => {
+                            deletedFiles++;
+                        }).catch(err => {
+                            skippedFiles++;
+                            // Log busy files at a lower level (DEBUG) to avoid noise
+                            const level = err.code === 'EBUSY' ? 'DEBUG' : 'WARN';
+                            return writeLog(`Could not delete ${filePath}: ${err.message}`, level);
+                        });
+                    }));
+                }
             } catch (err) {
                 await writeLog(`Could not access temp path ${tempPath}: ${err.message}`, 'WARN');
             }

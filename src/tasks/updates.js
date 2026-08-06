@@ -123,7 +123,7 @@ export async function runWingetUpdates(argv) {
         if (confirm) {
             console.log(chalk.yellow('  Upgrading all packages...'));
             try {
-                await runCommand('winget', ['upgrade', '--all', '--accept-source-agreements', '--accept-package-agreements'], { stream: true });
+                await runCommand('winget', ['upgrade', '--all', '--silent', '--disable-interactivity', '--accept-source-agreements', '--accept-package-agreements'], { stream: true });
             } catch (error) {
                 if (error.message.includes('2316632108')) {
                     return { message: 'Upgrade complete with some internal errors (or already up to date).' };

@@ -4,7 +4,7 @@ export async function runSlopRemoval() {
     return runTask('Removing Windows Slop (AI, Telemetry, Bing)', async () => {
         const script = `
             $registryPaths = @(
-                # Copilot and AI Features (including Windows Recall)
+                # Copilot and AI Features (including Windows Recall & Copilot Hardware Key)
                 @{ Path = "HKCU:\\Software\\Policies\\Microsoft\\Windows\\WindowsCopilot"; Name = "TurnOffWindowsCopilot"; Value = 1; Type = "DWord" },
                 @{ Path = "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsCopilot"; Name = "TurnOffWindowsCopilot"; Value = 1; Type = "DWord" },
                 @{ Path = "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows AI"; Name = "DisableAIDataAnalysis"; Value = 1; Type = "DWord" },
@@ -12,6 +12,7 @@ export async function runSlopRemoval() {
                 @{ Path = "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Recall"; Name = "DisableRecall"; Value = 1; Type = "DWord" },
                 @{ Path = "HKCU:\\Software\\Policies\\Microsoft\\Windows\\Recall"; Name = "DisableRecall"; Value = 1; Type = "DWord" },
                 @{ Path = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced"; Name = "ShowCopilotButton"; Value = 0; Type = "DWord" },
+                @{ Path = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced"; Name = "CopilotEnabled"; Value = 0; Type = "DWord" },
                 
                 # Start Menu Web Search & Bing
                 @{ Path = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Search"; Name = "BingSearchEnabled"; Value = 0; Type = "DWord" },
@@ -27,6 +28,10 @@ export async function runSlopRemoval() {
                 # Cloud Bloatware & Spotlight Recommendations
                 @{ Path = "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\CloudContent"; Name = "DisableWindowsConsumerFeatures"; Value = 1; Type = "DWord" },
                 @{ Path = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager"; Name = "SilentInstalledAppsEnabled"; Value = 0; Type = "DWord" },
+                @{ Path = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager"; Name = "SystemPaneSuggestionsEnabled"; Value = 0; Type = "DWord" },
+                @{ Path = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager"; Name = "SoftLandingEnabled"; Value = 0; Type = "DWord" },
+                @{ Path = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager"; Name = "RotatingLockScreenEnabled"; Value = 0; Type = "DWord" },
+                @{ Path = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager"; Name = "RotatingLockScreenOverlayEnabled"; Value = 0; Type = "DWord" },
                 
                 # Advertising ID
                 @{ Path = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo"; Name = "Enabled"; Value = 0; Type = "DWord" },
@@ -55,7 +60,7 @@ export async function runSlopRemoval() {
             }
         `;
         await runPowerShell(script);
-        return { message: 'AI, Bing search, diagnostic telemetry, and sponsored app shortcuts disabled.' };
+        return { message: 'AI, Bing search, diagnostic telemetry, lockscreen ads, and sponsored app shortcuts disabled.' };
     });
 }
 

@@ -90,7 +90,7 @@ export async function runPowerShell(script) {
     const scriptPath = path.join(toolTempDir, `ps-script-${Date.now()}-${Math.floor(Math.random() * 1000)}.ps1`);
     await fs.writeFile(scriptPath, script);
     try {
-        return await runCommand('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', scriptPath]);
+        return await runCommand('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', scriptPath]);
     } finally {
         await fs.unlink(scriptPath).catch(err => writeLog(`Failed to delete temp script: ${err.message}`, 'DEBUG'));
     }

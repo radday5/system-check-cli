@@ -31,12 +31,12 @@ export async function runHardwareCheck() {
                 $vramMB = [int64]($gpu.AdapterRAM / 1MB)
                 
                 # WMI AdapterRAM is often capped at 4GB (4095/4096MB). 
-                # If it's an NVIDIA card, nvidia-smi is much more reliable.
+                # Check nvidia-smi for NVIDIA, or Registry for AMD/Intel/Others if capped.
                 if ($gpu.Name -like "*NVIDIA*") {
                     $nvsmiPaths = @(
                         "nvidia-smi.exe",
-                        "$env:ProgramFiles\NVIDIA Corporation\NVSMI\nvidia-smi.exe",
-                        "$env:SystemRoot\System32\nvidia-smi.exe"
+                        "$env:ProgramFiles\\NVIDIA Corporation\\NVSMI\\nvidia-smi.exe",
+                        "$env:SystemRoot\\System32\\nvidia-smi.exe"
                     )
                     foreach ($path in $nvsmiPaths) {
                         try {
@@ -50,6 +50,20 @@ export async function runHardwareCheck() {
                             }
                         } catch {}
                     }
+                }
+                
+                if ($vramMB -le 4096) {
+                    try {
+                        $regClass = "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Class\\{4d36e972-e325-11ce-bfc1-08002be10318}"
+                        Get-ChildItem $regClass -ErrorAction SilentlyContinue | ForEach-Object {
+                            $memSize = Get-ItemProperty -Path $_.PsPath -Name "HardwareInformation.MemorySize" -ErrorAction SilentlyContinue
+                            if ($memSize -and $memSize.'HardwareInformation.MemorySize') {
+                                $bytes = [int64]$memSize.'HardwareInformation.MemorySize'
+                                $mb = [int64]($bytes / 1MB)
+                                if ($mb -gt $vramMB) { $vramMB = $mb }
+                            }
+                        }
+                    } catch {}
                 }
                 
                 $driverDate = "Unknown"
