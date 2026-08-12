@@ -98,7 +98,8 @@ export async function runPowerShell(script) {
 
 export async function runTask(title, task) {
     const startTime = Date.now();
-    const spinner = ora(title).start();
+    const isInteractive = Boolean(process.stdout.isTTY);
+    const spinner = ora({ text: title, isSilent: !isInteractive }).start();
     try {
         const result = await task();
         const duration = ((Date.now() - startTime) / 1000).toFixed(2);
@@ -121,7 +122,8 @@ export async function runTask(title, task) {
 }
 
 export async function checkAdmin() {
-    const spinner = ora('Checking for Administrator privileges').start();
+    const isInteractive = Boolean(process.stdout.isTTY);
+    const spinner = ora({ text: 'Checking for Administrator privileges', isSilent: !isInteractive }).start();
     try {
         await runCommand('net', ['session']);
         spinner.succeed(chalk.green('Running as Administrator: OK'));
@@ -134,3 +136,4 @@ export async function checkAdmin() {
         process.exit(1);
     }
 }
+

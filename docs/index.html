@@ -436,20 +436,24 @@
             <div class="tab-panel" id="panel-startup" role="tabpanel" aria-labelledby="tab-startup">
               <div class="startup-explanation">
                 <h3>Scheduled Background Task Installation</h3>
-                <p>Ensure your computer keeps running pristine clean and fully upgraded by setting up Winslopr to run silently in the background at every user login.</p>
+                <p>Ensure your computer keeps running pristine clean and fully upgraded by setting up Winslopr to run silently in the background at every user login via Windows Task Scheduler (<code>WinsloprMaintenance</code>).</p>
                 
                 <div class="alert-box note">
-                  <p><strong>Note:</strong> Installing the scheduler requires opening your shell as a local <strong>Administrator</strong>.</p>
+                  <p><strong>Note:</strong> Installing the scheduler requires opening your shell (PowerShell or CMD) as an <strong>Administrator</strong>.</p>
                 </div>
 
                 <div class="step-guide">
                   <div class="step-guide-item">
                     <span class="step-num">1</span>
                     <div class="step-content">
-                      <h4>Install the Task Scheduler</h4>
-                      <p>Run the built-in setup script inside the Winslopr folder to configure the Windows Task Scheduler task automatically.</p>
+                      <h4>Install the Task Scheduler Entry</h4>
+                      <p>Run the setup command from your Winslopr project directory to register the background startup task automatically:</p>
                       <div class="code-snippet-box select-all">
                         <code>npm run startup:install</code>
+                      </div>
+                      <p class="install-subtext">Or invoke PowerShell directly:</p>
+                      <div class="code-snippet-box select-all">
+                        <code>powershell -ExecutionPolicy Bypass -File ./scripts/manage-startup.ps1 -Action install</code>
                       </div>
                     </div>
                   </div>
@@ -458,9 +462,13 @@
                     <span class="step-num">2</span>
                     <div class="step-content">
                       <h4>Uninstall / Remove Automation</h4>
-                      <p>If you need to remove the task from the Windows system at any time, run:</p>
+                      <p>If you need to remove the automated startup task from Windows Task Scheduler at any time, run:</p>
                       <div class="code-snippet-box select-all">
                         <code>npm run startup:uninstall</code>
+                      </div>
+                      <p class="install-subtext">Or via PowerShell:</p>
+                      <div class="code-snippet-box select-all">
+                        <code>powershell -ExecutionPolicy Bypass -File ./scripts/manage-startup.ps1 -Action uninstall</code>
                       </div>
                     </div>
                   </div>

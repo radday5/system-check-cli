@@ -38,8 +38,8 @@ npx winslopr
 ### 🛠️ Local Installation (Development)
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/builtbybel/Winslopr.git
-   cd Winslopr
+   git clone https://github.com/radday5/system-check-cli.git
+   cd system-check-cli
    ```
 2. **Install dependencies**:
    ```bash
@@ -157,20 +157,28 @@ npx winslopr -s -y
 
 ## ⏰ Automated Startup (Task Scheduler)
 
-You can set up Winslopr to run silently in the background every time you log into Windows.
+You can set up Winslopr to run silently in the background every time you log into Windows via Windows Task Scheduler (`WinsloprMaintenance`).
 
-> **Note:** This requires **Administrator privileges**.
+> **Note:** Installing the scheduled task requires **Administrator privileges**.
 
 ### ➕ Enable Startup
-Run this command to create a scheduled task:
+Run this command from your terminal:
 ```bash
 npm run startup:install
+```
+Or directly via PowerShell:
+```powershell
+powershell -ExecutionPolicy Bypass -File ./scripts/manage-startup.ps1 -Action install
 ```
 
 ### ➖ Disable Startup
 Run this command to remove the scheduled task:
 ```bash
 npm run startup:uninstall
+```
+Or directly via PowerShell:
+```powershell
+powershell -ExecutionPolicy Bypass -File ./scripts/manage-startup.ps1 -Action uninstall
 ```
 
 ---
