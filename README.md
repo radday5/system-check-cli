@@ -5,9 +5,9 @@ A powerful, interactive command-line tool built with Node.js to automate the rem
 ## ✨ Features
 
 -   **⚡ Smart-Throttling (Startup Optimization)**: Automatically limits heavy or disruptive tasks (like SFC scans, DISM health checks, full disk defrags, system/package updates, and network adapter resets) to run only at sensible intervals (e.g. 7 or 14 days) during silent startup runs, ensuring your computer boots in **under 5 seconds** instead of hogging resources for 30+ minutes on every login.
--   **🧹 Slop Removal**: Disables AI features like **Copilot** and **Recall**, removes Bing search from Start, and limits telemetry.
+-   **🧹 Slop Removal**: Disables AI features (**Copilot**, **Recall**, and Copilot Hardware Key), removes Bing search and search highlights, blocks Start Menu recommendation badges & promotions, eliminates File Explorer sync provider ads, turns off Edge AI sidebar & shopping assistant bloatware, disables GameDVR background capture overhead, and disables Windows diagnostic telemetry services (`DiagTrack`, `dmwappushservice`).
 -   **🛡️ Administrator Check**: Automatically verifies for required elevated privileges.
--   **🖥️ Hardware & OS Info**: Provides a detailed summary of your CPU, GPU (with VRAM), RAM, Motherboard, Windows version, and all fixed drives.
+-   **🖥️ Hardware & OS Info**: Provides a detailed summary of your CPU, GPU (with VRAM), RAM (speed in MHz & DIMM count), Motherboard, Windows version, and all fixed drives.
 -   **🔄 Windows Updates**: Scans for, lists, and **installs** pending Windows Updates.
 -   **📦 Software Updates**: 
     -   **Winget**: Refreshes sources and upgrades all outdated packages.
@@ -18,9 +18,10 @@ A powerful, interactive command-line tool built with Node.js to automate the rem
 -   **🧹 System Cleanup**:
     -   **Temp Files**: Safely clears Windows and User temporary folders (skipping sensitive app folders).
     -   **Recycle Bin**: Empties the Recycle Bin for all users.
-    -   **Disk Cleanup**: Runs Windows Disk Cleanup silently via PowerShell (cleans logs, cache, error reports).
+    -   **Disk Cleanup**: Runs Windows Disk Cleanup silently via PowerShell (cleans crash dumps, minidumps, logs, cache, Delivery Optimization, and error reports).
     -   **DNS Cache**: Flushes the DNS resolver cache (`ipconfig /flushdns`).
     -   **Drive Optimization**: Runs `defrag /O` (Trim/Defrag) on all fixed logical drives.
+-   **🚀 Cutting-Edge Enhancements**: Checks & toggles Hardware-Accelerated GPU Scheduling (HAGS), Sudo for Windows, Windows Game Mode, DirectStorage (BypassIO), and TCP Window Auto-Tuning / ECN network throughput optimization.
 -   **🌐 Network Repair**: Resets Winsock/IP stack and applies stability fixes for common 2.5GbE adapters (Intel/Realtek).
 -   **📜 Real-time Logging**: Streams all command output directly to the console and saves a detailed execution log to your `%TEMP%` folder.
 

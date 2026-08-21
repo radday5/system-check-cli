@@ -115,7 +115,7 @@ function initTerminalSimulation() {
     { type: 'type', content: 'npx winslopr', speed: 100 },
     { type: 'wait', duration: 600 },
     
-    { type: 'log', style: 'log-bold', content: ' Winslopr v26.7.0' },
+    { type: 'log', style: 'log-bold', content: ' Winslopr v26.8.0' },
     { type: 'log', style: 'log-subtle', content: '==================================================' },
     { type: 'wait', duration: 400 },
     
@@ -126,10 +126,10 @@ function initTerminalSimulation() {
     
     { type: 'log', style: 'log-info', content: '🖥️ Gathering Hardware & OS Information...' },
     { type: 'wait', duration: 800 },
-    { type: 'log', style: 'log-subtle', content: '   • CPU:   Intel(R) Core(TM) i7-13700K (24 Threads)' },
-    { type: 'log', style: 'log-subtle', content: '   • GPU:   NVIDIA GeForce RTX 4070 (12GB VRAM)' },
-    { type: 'log', style: 'log-subtle', content: '   • RAM:   32.00 GB DDR5 System Memory' },
-    { type: 'log', style: 'log-subtle', content: '   • OS:    Windows 11 Pro 64-bit (Build 22631)' },
+    { type: 'log', style: 'log-subtle', content: '   • CPU:   AMD Ryzen 5 5600X (12 Threads)' },
+    { type: 'log', style: 'log-subtle', content: '   • GPU:   NVIDIA GeForce RTX 5070 (12GB VRAM)' },
+    { type: 'log', style: 'log-subtle', content: '   • RAM:   128.00 GB @ 3200 MHz (4 DIMMs)' },
+    { type: 'log', style: 'log-subtle', content: '   • OS:    Windows 11 Pro 64-bit (Build 26200)' },
     { type: 'wait', duration: 500 },
     
     { type: 'log', style: 'log-info', content: '⚙️ State loaded from %LOCALAPPDATA%\\winslopr-state.json' },
@@ -144,21 +144,21 @@ function initTerminalSimulation() {
     { type: 'log', style: 'log-subtle', content: '   [⚙] optimize    (Trim/Defrag Drives)   -> SKIPPED (Last run 8d ago)' },
     { type: 'wait', duration: 800 },
     
-    { type: 'spinner', content: '🧹 Cleaning Windows Slop (Removing telemetry, Recall, search highlights & widgets)...', duration: 1500 },
-    { type: 'log', style: 'log-success', content: '   ✔ Disabled Microsoft Recall & Copilot background agents.' },
-    { type: 'log', style: 'log-success', content: '   ✔ Disabled Bing search highlights & Start menu web search.' },
-    { type: 'log', style: 'log-success', content: '   ✔ Hidden taskbar Chat & Widgets shortcuts.' },
-    { type: 'log', style: 'log-success', content: '   ✔ Registry tracking telemetry pipelines disabled.' },
+    { type: 'spinner', content: '🧹 Cleaning Windows Slop (Removing telemetry, Recall, search highlights, Edge/Explorer ads & services)...', duration: 1500 },
+    { type: 'log', style: 'log-success', content: '   ✔ Disabled Microsoft Recall, Copilot & hardware Copilot key.' },
+    { type: 'log', style: 'log-success', content: '   ✔ Disabled Bing search highlights & Start menu recommendations.' },
+    { type: 'log', style: 'log-success', content: '   ✔ Blocked Edge AI sidebar and Explorer sync promo ads.' },
+    { type: 'log', style: 'log-success', content: '   ✔ Disabled Windows DiagTrack telemetry background services.' },
     { type: 'wait', duration: 600 },
     
-    { type: 'spinner', content: '🧼 Safely clearing junk temporary folders & DNS caches...', duration: 1200 },
-    { type: 'log', style: 'log-success', content: '   ✔ Cleared Windows Temp & User Temp caches.' },
+    { type: 'spinner', content: '🧼 Safely clearing junk temporary folders, crash dumps & DNS caches...', duration: 1200 },
+    { type: 'log', style: 'log-success', content: '   ✔ Cleared Windows Temp, User Temp & Minidump caches.' },
     { type: 'log', style: 'log-success', content: '   ✔ Flushed DNS Resolver Cache.' },
     { type: 'log', style: 'log-success', content: '   ✔ Emptied Recycle Bin (Freed up 8.42 GB disk space).' },
     { type: 'wait', duration: 700 },
     
     { type: 'log', style: 'log-success', content: '🎉 Success: Windows Slop check and system maintenance completed!' },
-    { type: 'log', style: 'log-bold', content: '⏳ Total Execution Time: 3.82 seconds' },
+    { type: 'log', style: 'log-bold', content: '⏳ Total Execution Time: 3.42 seconds' },
     { type: 'wait', duration: 8000 }, // long pause to let visitors read
     
     { type: 'clear' }

@@ -49,8 +49,19 @@ export async function runCuttingEdgeEnhancements(argv) {
                     $vbsStatus = "Enabled"
                 }
             } catch {}
-            $results += @{ Name = "Virtualization-Based Security (VBS / Core Isolation)"; Status = $vbsStatus }
-
+            # 6. Check TCP Window Auto-Tuning & ECN
+            $tcpAuto = "Disabled"
+            try {
+                $tcpGlobal = netsh int tcp show global
+                if ($tcpGlobal -match "Receive Window Auto-Tuning Level\\s*:\\s*normal") {
+                    $tcpAuto = "Enabled"
+                }
+            } catch {}
+            $results += @{ 
+                Name = "TCP Window Auto-Tuning (Optimized Network Throughput)"; 
+                Status = $tcpAuto; 
+                Command = "netsh int tcp set global autotuninglevel=normal; netsh int tcp set global ecncapability=enabled" 
+            }
 
             $results | ConvertTo-Json -Compress
         `;
@@ -91,6 +102,9 @@ export async function runCuttingEdgeEnhancements(argv) {
                             Set-ItemProperty -Path "${f.Registry}" -Name "${f.ValueName}" -Value ${f.TargetValue} -Type DWord -Force
                         `;
                         await runPowerShell(enableScript);
+                        console.log(chalk.green(`    [OK] ${f.Name} enabled.`));
+                    } else if (f.Command) {
+                        await runPowerShell(f.Command);
                         console.log(chalk.green(`    [OK] ${f.Name} enabled.`));
                     }
                 }

@@ -89,11 +89,20 @@ export async function runHardwareCheck() {
 
             # Get RAM Information
             $ram = Get-CimInstance -ClassName Win32_ComputerSystem
+            $ramSticks = Get-CimInstance -ClassName Win32_PhysicalMemory -ErrorAction SilentlyContinue
+            $ramSpeed = 0
+            $ramCount = 0
+            if ($ramSticks) {
+                $ramCount = @($ramSticks).Count
+                $ramSpeed = (@($ramSticks) | Measure-Object -Property ConfiguredClockSpeed -Maximum).Maximum
+            }
             $ramInfo = @{
                 TotalPhysicalMemory = [math]::Round($ram.TotalPhysicalMemory / 1GB)
+                Speed = $ramSpeed
+                StickCount = $ramCount
             }
 
-            # Get All Fixed Disk Information
+            # Get All Fixed Disk Information & Physical Disks
             $disks = Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DriveType=3"
             $diskList = @()
             foreach ($disk in $disks) {
@@ -141,7 +150,10 @@ export async function runHardwareCheck() {
                 : `${systemInfo.GPU.AdapterRAM} MB`;
             output += chalk.bold('GPU:') + `\n  - ${systemInfo.GPU.Name}\n    - VRAM: ${vramFormatted}\n    - Driver: ${systemInfo.GPU.DriverVersion} (${systemInfo.GPU.DriverDate})\n`;
         }
-        output += chalk.bold('RAM:') + `\n  - Total: ${systemInfo.RAM.TotalPhysicalMemory} GB\n`;
+        
+        const ramSpeedStr = systemInfo.RAM.Speed ? ` @ ${systemInfo.RAM.Speed} MHz` : '';
+        const ramSticksStr = systemInfo.RAM.StickCount ? ` (${systemInfo.RAM.StickCount} DIMMs)` : '';
+        output += chalk.bold('RAM:') + `\n  - Total: ${systemInfo.RAM.TotalPhysicalMemory} GB${ramSpeedStr}${ramSticksStr}\n`;
         
         if (systemInfo.Disks && systemInfo.Disks.length > 0) {
             output += chalk.bold('Disks:') + '\n';

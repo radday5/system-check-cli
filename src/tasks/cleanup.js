@@ -66,6 +66,17 @@ export async function runRecycleBinCleanup() {
 export async function runDiskCleanup() {
     return runTask('Running Windows Disk Cleanup (PowerShell)', async () => {
         const script = `
+            # Purge Windows Crash Dumps & Minidumps
+            $crashPaths = @(
+                "$env:LocalAppData\\CrashDumps",
+                "$env:SystemRoot\\Minidump"
+            )
+            foreach ($path in $crashPaths) {
+                if (Test-Path $path) {
+                    Remove-Item -Path "$path\\*" -Recurse -Force -ErrorAction SilentlyContinue
+                }
+            }
+
             # Purge Delivery Optimization download cache
             $doPath = "$env:SystemRoot\\SoftwareDistribution\\DeliveryOptimization\\Download"
             if (Test-Path $doPath) {
@@ -91,11 +102,22 @@ export async function runDiskCleanup() {
                 Remove-Item -Path "$shaderPath\\*" -Recurse -Force -ErrorAction SilentlyContinue
             }
 
-            # Purge system logs
+            # Purge system logs & CBS log archives older than 7 days
             $logsPath = "$env:SystemRoot\\Logs"
             if (Test-Path $logsPath) {
                 Remove-Item -Path "$logsPath\\*" -Recurse -Force -ErrorAction SilentlyContinue
             }
+            $cbsLogs = "$env:SystemRoot\\Logs\\CBS"
+            if (Test-Path $cbsLogs) {
+                Get-ChildItem -Path $cbsLogs -Filter "CbsPersist_*.log" -ErrorAction SilentlyContinue | 
+                    Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-7) } | 
+                    Remove-Item -Force -ErrorAction SilentlyContinue
+            }
+
+            # Clear BranchCache if available
+            try {
+                Clear-BCCache -Force -ErrorAction SilentlyContinue
+            } catch {}
         `;
         await runPowerShell(script);
         return { message: 'System caches, logs, and error reports purged.' };
