@@ -47,7 +47,7 @@ export async function writeLog(message, level = 'INFO') {
 export async function runCommand(command, args = [], options = {}) {
     const { stream = false, ...spawnOptions } = options;
     return new Promise((resolve, reject) => {
-        const child = spawn(command, args, { stdio: stream ? 'inherit' : 'pipe', shell: true, ...spawnOptions });
+        const child = spawn(command, args, { stdio: stream ? 'inherit' : 'pipe', shell: true, windowsHide: true, ...spawnOptions });
         let stdout = '';
         let stderr = '';
 
@@ -90,7 +90,7 @@ export async function runPowerShell(script) {
     const scriptPath = path.join(toolTempDir, `ps-script-${Date.now()}-${Math.floor(Math.random() * 1000)}.ps1`);
     await fs.writeFile(scriptPath, script);
     try {
-        return await runCommand('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', scriptPath]);
+        return await runCommand('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', scriptPath]);
     } finally {
         await fs.unlink(scriptPath).catch(err => writeLog(`Failed to delete temp script: ${err.message}`, 'DEBUG'));
     }

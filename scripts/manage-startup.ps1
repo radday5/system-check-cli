@@ -6,8 +6,18 @@ param (
 )
 
 $TaskName = "WinsloprMaintenance"
+$LegacyTaskNames = @("SystemCheckMaintenance")
 
 if ($Action -eq "install") {
+    # Remove any legacy scheduled tasks to prevent duplicate triggers on startup
+    foreach ($legacyName in $LegacyTaskNames) {
+        $legacyTask = Get-ScheduledTask -TaskName $legacyName -ErrorAction SilentlyContinue
+        if ($legacyTask) {
+            Unregister-ScheduledTask -TaskName $legacyName -Confirm:$false
+            Write-Host "Removed legacy startup task: $legacyName" -ForegroundColor Yellow
+        }
+    }
+
     $nodePath = (Get-Command node -ErrorAction SilentlyContinue).Source
     if (-not $nodePath) {
         if (Test-Path "C:\Program Files\nodejs\node.exe") {
@@ -25,11 +35,12 @@ if ($Action -eq "install") {
     # Create the action (runs node directly with index.js, passing silent and yes flags, with working directory set)
     $actionObj = New-ScheduledTaskAction -Execute "$nodePath" -Argument "`"$($scriptPath.Path)`" --silent --yes" -WorkingDirectory "$scriptDir"
     
-    # Trigger on Logon
-    $triggerObj = New-ScheduledTaskTrigger -AtLogOn
-    
     # Run with Highest Privileges (Administrator) under the current user context
     $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+
+    # Trigger on Logon for current user
+    $triggerObj = New-ScheduledTaskTrigger -AtLogOn -User $currentUser
+    
     $principalObj = New-ScheduledTaskPrincipal -UserId $currentUser -LogonType Interactive -RunLevel Highest
     
     # Register the task
@@ -38,11 +49,17 @@ if ($Action -eq "install") {
     Write-Host "The tool will now run silently with Administrator privileges every time you log in."
 }
 else {
-    $existingTask = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
-    if ($existingTask) {
-        Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
-        Write-Host "Successfully removed startup task: $TaskName" -ForegroundColor Yellow
-    } else {
+    $allTasks = @($TaskName) + $LegacyTaskNames
+    $removedAny = $false
+    foreach ($task in $allTasks) {
+        $existingTask = Get-ScheduledTask -TaskName $task -ErrorAction SilentlyContinue
+        if ($existingTask) {
+            Unregister-ScheduledTask -TaskName $task -Confirm:$false
+            Write-Host "Successfully removed startup task: $task" -ForegroundColor Yellow
+            $removedAny = $true
+        }
+    }
+    if (-not $removedAny) {
         Write-Host "No startup task named '$TaskName' found." -ForegroundColor Gray
     }
 }
