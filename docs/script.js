@@ -115,7 +115,7 @@ function initTerminalSimulation() {
     { type: 'type', content: 'npx winslopr', speed: 100 },
     { type: 'wait', duration: 600 },
     
-    { type: 'log', style: 'log-bold', content: ' Winslopr v26.8.1' },
+    { type: 'log', style: 'log-bold', content: ' Winslopr v26.9.0' },
     { type: 'log', style: 'log-subtle', content: '==================================================' },
     { type: 'wait', duration: 400 },
     
@@ -144,8 +144,9 @@ function initTerminalSimulation() {
     { type: 'log', style: 'log-subtle', content: '   [⚙] optimize    (Trim/Defrag Drives)   -> SKIPPED (Last run 8d ago)' },
     { type: 'wait', duration: 800 },
     
-    { type: 'spinner', content: '🧹 Cleaning Windows Slop (Removing telemetry, Recall, search highlights, Edge/Explorer ads & services)...', duration: 1500 },
-    { type: 'log', style: 'log-success', content: '   ✔ Disabled Microsoft Recall, Copilot & hardware Copilot key.' },
+    { type: 'spinner', content: '🧹 Cleaning Windows Slop (Removing telemetry, Recall, Click-to-Do, Edge background RAM, ads)...', duration: 1500 },
+    { type: 'log', style: 'log-success', content: '   ✔ Disabled Microsoft Recall, Click-to-Do & Copilot Key.' },
+    { type: 'log', style: 'log-success', content: '   ✔ Silenced Edge silent background processes & startup boost (freed ~500MB RAM).' },
     { type: 'log', style: 'log-success', content: '   ✔ Disabled Bing search highlights & Start menu recommendations.' },
     { type: 'log', style: 'log-success', content: '   ✔ Blocked Edge AI sidebar and Explorer sync promo ads.' },
     { type: 'log', style: 'log-success', content: '   ✔ Disabled Windows DiagTrack telemetry background services.' },

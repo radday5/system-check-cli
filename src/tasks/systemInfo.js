@@ -83,10 +83,6 @@ export async function runHardwareCheck() {
                 }
             }
 
-            # Return the GPU with the most VRAM (likely the dedicated one)
-            $gpuInfo = $gpuList | Sort-Object AdapterRAM -Descending | Select-Object -First 1
-            if ($null -eq $gpuInfo) { $gpuInfo = @{ Name = "Unknown GPU"; AdapterRAM = 0; DriverVersion = "Unknown"; DriverDate = "Unknown" } }
-
             # Get RAM Information
             $ram = Get-CimInstance -ClassName Win32_ComputerSystem
             $ramSticks = Get-CimInstance -ClassName Win32_PhysicalMemory -ErrorAction SilentlyContinue
@@ -120,11 +116,11 @@ export async function runHardwareCheck() {
                 Product = $mb.Product
             }
 
-            # Combine all info into a single object
+            # Return all GPUs
             $systemInfo = @{
                 OS = $osInfo
                 CPU = $cpuInfo
-                GPU = $gpuInfo
+                GPUs = $gpuList
                 RAM = $ramInfo
                 Disks = $diskList
                 Motherboard = $mbInfo
@@ -144,7 +140,15 @@ export async function runHardwareCheck() {
         let output = chalk.bold.cyan('\n--- System Information ---\n');
         output += chalk.bold('OS:') + `\n  - ${systemInfo.OS.Caption} (Version: ${systemInfo.OS.Version}, Build: ${systemInfo.OS.BuildNumber})\n`;
         output += chalk.bold('CPU:') + `\n  - ${systemInfo.CPU.Name}\n    - Cores: ${systemInfo.CPU.NumberOfCores}, Logical Processors: ${systemInfo.CPU.NumberOfLogicalProcessors}\n    - Max Speed: ${systemInfo.CPU.MaxClockSpeed} MHz\n`;
-        if (systemInfo.GPU) {
+        if (systemInfo.GPUs && systemInfo.GPUs.length > 0) {
+            output += chalk.bold(systemInfo.GPUs.length > 1 ? 'GPUs:' : 'GPU:') + '\n';
+            systemInfo.GPUs.forEach(gpu => {
+                const vramFormatted = gpu.AdapterRAM >= 1024 
+                    ? `${(gpu.AdapterRAM / 1024).toFixed(1)} GB` 
+                    : `${gpu.AdapterRAM} MB`;
+                output += `  - ${gpu.Name}\n    - VRAM: ${vramFormatted}\n    - Driver: ${gpu.DriverVersion} (${gpu.DriverDate})\n`;
+            });
+        } else if (systemInfo.GPU) {
             const vramFormatted = systemInfo.GPU.AdapterRAM >= 1024 
                 ? `${(systemInfo.GPU.AdapterRAM / 1024).toFixed(1)} GB` 
                 : `${systemInfo.GPU.AdapterRAM} MB`;
@@ -159,7 +163,10 @@ export async function runHardwareCheck() {
             output += chalk.bold('Disks:') + '\n';
             systemInfo.Disks.forEach(disk => {
                 const freePercent = ((disk.FreeSpace / disk.Size) * 100).toFixed(1);
-                output += `  - Drive ${disk.DeviceID} Size: ${disk.Size} GB, Free: ${disk.FreeSpace} GB (${freePercent}%)\n`;
+                let percentColor = chalk.green;
+                if (parseFloat(freePercent) < 10) percentColor = chalk.red;
+                else if (parseFloat(freePercent) < 20) percentColor = chalk.yellow;
+                output += `  - Drive ${disk.DeviceID} Size: ${disk.Size} GB, Free: ${disk.FreeSpace} GB (${percentColor(freePercent + '%')})\n`;
             });
         }
         output += chalk.bold('Motherboard:') + `\n  - ${systemInfo.Motherboard.Manufacturer} ${systemInfo.Motherboard.Product}\n`;

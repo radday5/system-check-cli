@@ -49,6 +49,8 @@ export async function runCuttingEdgeEnhancements(argv) {
                     $vbsStatus = "Enabled"
                 }
             } catch {}
+            $results += @{ Name = "Virtualization-Based Security (VBS)"; Status = $vbsStatus }
+
             # 6. Check TCP Window Auto-Tuning & ECN
             $tcpAuto = "Disabled"
             try {
@@ -61,6 +63,24 @@ export async function runCuttingEdgeEnhancements(argv) {
                 Name = "TCP Window Auto-Tuning (Optimized Network Throughput)"; 
                 Status = $tcpAuto; 
                 Command = "netsh int tcp set global autotuninglevel=normal; netsh int tcp set global ecncapability=enabled" 
+            }
+
+            # 7. Check Windows 11 Classic Full Context Menus
+            $classicMenu = Test-Path "HKCU:\\Software\\Classes\\CLSID\\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\\InprocServer32"
+            $menuStatus = if ($classicMenu) { "Enabled" } else { "Disabled" }
+            $results += @{
+                Name = "Windows 11 Classic Full Context Menus (Bypass 'Show More Options')";
+                Status = $menuStatus;
+                Command = 'New-Item -Path "HKCU:\\Software\\Classes\\CLSID\\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\\InprocServer32" -Value "" -Force | Out-Null'
+            }
+
+            # 8. Check Multimedia Network Throttling
+            $netThrottle = Get-ItemProperty -Path "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile" -Name "NetworkThrottlingIndex" -ErrorAction SilentlyContinue
+            $netStatus = if ($netThrottle -and $netThrottle.NetworkThrottlingIndex -eq -1) { "Enabled" } else { "Disabled" }
+            $results += @{
+                Name = "Disable Multimedia Network Throttling (Low-Latency Gaming/P2P)";
+                Status = $netStatus;
+                Command = 'Set-ItemProperty -Path "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile" -Name "NetworkThrottlingIndex" -Value 0xFFFFFFFF -Type DWord -Force; Set-ItemProperty -Path "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile" -Name "SystemResponsiveness" -Value 0 -Type DWord -Force'
             }
 
             $results | ConvertTo-Json -Compress

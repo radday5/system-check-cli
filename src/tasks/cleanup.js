@@ -102,6 +102,12 @@ export async function runDiskCleanup() {
                 Remove-Item -Path "$shaderPath\\*" -Recurse -Force -ErrorAction SilentlyContinue
             }
 
+            # Purge Windows Explorer Thumbnail Cache
+            $thumbPath = "$env:LocalAppData\\Microsoft\\Windows\\Explorer"
+            if (Test-Path $thumbPath) {
+                Get-ChildItem -Path $thumbPath -Filter "thumbcache_*.db" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+            }
+
             # Purge system logs & CBS log archives older than 7 days
             $logsPath = "$env:SystemRoot\\Logs"
             if (Test-Path $logsPath) {
