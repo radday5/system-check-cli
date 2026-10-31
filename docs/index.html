@@ -387,8 +387,8 @@
                   <div class="flag-cell-desc"><strong>Information Mode.</strong> Instantly query and print out detailed OS, Motherboard, GPU (with VRAM), and memory diagnostics, then immediately exit.</div>
                 </div>
                 <div class="flag-row">
-                  <div class="flag-cell-name"><code>--tasks</code>, <code>-t</code></div>
-                  <div class="flag-cell-desc"><strong>Target specific jobs.</strong> Pass key names to run specific maintenance directly (e.g. <code>-t sfc dns</code>).</div>
+                  <div class="flag-cell-name"><code>--tasks</code>, <code>-t</code>, <em>positional</em></div>
+                  <div class="flag-cell-desc"><strong>Target specific jobs or aliases.</strong> Run specific tasks directly by name or shorthand (e.g. <code>clean</code>, <code>cleanit</code>, <code>slop</code>, <code>update</code>, <code>dns</code>, <code>optimize</code>). Example: <code>winslopr clean -s -y</code>.</div>
                 </div>
                 <div class="flag-row">
                   <div class="flag-cell-name"><code>--config</code>, <code>-c</code></div>
@@ -428,6 +428,14 @@
                 <p class="code-explain">Runs Winslopr silently using custom task check states and throttle intervals defined in a JSON file.</p>
                 <div class="code-snippet-box">
                   <code>npx winslopr -s -y -c "C:\path\to\config.json"</code>
+                </div>
+              </div>
+
+              <div class="code-example-block">
+                <h4>5. Dedicated Clean-It (Deep Storage Purge)</h4>
+                <p class="code-explain">Directly purges temporary files, DirectX shader cache, Explorer thumbnail caches, Windows crash dumps, and empties the Recycle Bin.</p>
+                <div class="code-snippet-box">
+                  <code>npx winslopr clean -s -y</code>
                 </div>
               </div>
             </div>

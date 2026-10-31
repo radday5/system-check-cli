@@ -115,11 +115,50 @@ async function main() {
         optimize: { name: config.optimize.name, task: () => runDiskOptimization(), checked: config.optimize.checked },
     };
 
-    let tasksToRun = Object.keys(tasks).filter(key => tasks[key].checked);
+    const taskAliases = {
+        clean: ['cleanup', 'recyclebin', 'diskcleanup'],
+        cleanit: ['cleanup', 'recyclebin', 'diskcleanup'],
+        'clean-it': ['cleanup', 'recyclebin', 'diskcleanup'],
+        cleanup: ['cleanup'],
+        temp: ['cleanup'],
+        slop: ['slop'],
+        debloat: ['slop'],
+        update: ['winUpdate', 'winget', 'choco'],
+        updates: ['winUpdate', 'winget', 'choco'],
+        dism: ['dism'],
+        sfc: ['sfc'],
+        dns: ['dns'],
+        net: ['network'],
+        network: ['network'],
+        optimize: ['optimize'],
+        trim: ['optimize'],
+        wucleanup: ['wucleanup']
+    };
 
+    const requestedTasks = [];
+    if (argv._ && argv._.length > 0) {
+        requestedTasks.push(...argv._.map(String));
+    }
     if (argv.tasks && argv.tasks.length > 0) {
-        tasksToRun = argv.tasks.filter(t => tasks[t]);
-    } else if (!argv.silent) {
+        requestedTasks.push(...argv.tasks.map(String));
+    }
+
+    let tasksToRun = [];
+    if (requestedTasks.length > 0) {
+        for (const req of requestedTasks) {
+            const lower = req.toLowerCase();
+            if (taskAliases[lower]) {
+                tasksToRun.push(...taskAliases[lower]);
+            } else if (tasks[lower]) {
+                tasksToRun.push(lower);
+            } else if (tasks[req]) {
+                tasksToRun.push(req);
+            }
+        }
+        tasksToRun = [...new Set(tasksToRun)];
+    } else if (argv.silent) {
+        tasksToRun = Object.keys(tasks).filter(key => tasks[key].checked);
+    } else {
         const response = await inquirer.prompt([
             {
                 type: 'checkbox',
@@ -167,6 +206,7 @@ async function main() {
             continue;
         }
 
+        console.log(chalk.bold.cyan('\n>> Running Task: ' + tasks[taskKey].name));
         const success = await tasks[taskKey].task();
 
         if (success !== false) {

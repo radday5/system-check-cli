@@ -64,7 +64,7 @@ You can customize how the tool runs using flags:
 | `--force` | `-f` | **Force mode.** Bypasses the Smart-Throttle intervals in silent mode and forces all selected tasks to run. |
 | `--no-throttle` | | **Disable throttling.** Disables the last-run check entirely for the session. |
 | `--info` | `-i` | **System Info mode.** Displays hardware and OS information and then exits. |
-| `--tasks` | `-t` | **Specific tasks.** Run only selected tasks (e.g., `-t dns slop`). |
+| `--tasks` | `-t` | **Specific tasks or aliases.** Run only selected tasks or shorthand commands (e.g., `clean`, `cleanit`, `slop`, `update`, `dns`, `optimize`). Supports positional execution like `winslopr clean`. |
 | `--config` | `-c` | **Custom Configuration.** Path to a custom configuration JSON file. |
 
 ## ⚙️ Custom Configuration File
@@ -152,6 +152,14 @@ When running in non-interactive/silent mode (such as at Windows Startup), Winslo
 Run all default tasks and apply every fix without any clicking or typing:
 ```bash
 npx winslopr -s -y
+```
+
+**2. Dedicated "Clean-It" (Deep Temp & Storage Purge):**
+Purge temporary files, DirectX shader cache, Explorer thumbnail caches, Windows crash dumps, and empty the Recycle Bin directly:
+```bash
+npx winslopr clean -s -y
+# Or if installed globally:
+winslopr clean
 ```
 
 ---
